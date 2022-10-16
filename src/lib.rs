@@ -1,11 +1,12 @@
 use nih_plug::prelude::*;
+use nih_plug_vizia::vizia::context;
 use std::sync::Arc;
 
 mod editor;
 mod noise;
 
 impl Plugin for noise::Noise {
-    const NAME: &'static str = "NoiseGen";
+    const NAME: &'static str = "noisegen";
     const VENDOR: &'static str = "";
     const URL: &'static str = "";
     const EMAIL: &'static str = "";
@@ -53,9 +54,14 @@ impl Plugin for noise::Noise {
             let num_samples = channel_samples.len();
 
             let gain = self.params.gain.smoothed.next();
+
+            let noise_sample = match self.params.noise_type.value() {
+                noise::NoiseType::White => self.white(),
+                noise::NoiseType::Pink => self.pink(),
+            };
             for sample in channel_samples {
                 // *sample *= gain;
-                *sample = self.white() * gain;
+                *sample = noise_sample * gain;
                 amplitude += *sample;
 
             }
