@@ -1,5 +1,5 @@
-use nih_plug::context::GuiContext;
-use nih_plug::prelude::{Editor, Param};
+use nih_plug::context::{GuiContext, ParamSetter};
+use nih_plug::prelude::{Editor};
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
@@ -7,8 +7,6 @@ use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
 use std::sync::Arc;
 
 use crate::noise;
-
-use self::ui_data_derived_lenses::gui_context;
 
 /// VIZIA uses points instead of pixels for text
 const POINT_SCALE: f32 = 0.75;
@@ -25,17 +23,25 @@ struct UiData {
 
 #[derive(Debug)]
 enum ParamChangeEvent {
-    NoiseEvent(usize),
+    NoiseEvent(String),
 }
 
 impl Model for UiData {
 
     fn event(&mut self, cx: &mut EventContext, event: &mut Event) {
+
+        let setter = ParamSetter::new(self.gui_context.as_ref());
         event.map(|e, _| match e {
-            ParamChangeEvent::NoiseEvent(n) => {
-                unsafe {
-                    self.gui_context.raw_begin_set_parameter(self.params.noise_type.as_ptr());
-                }
+            ParamChangeEvent::NoiseEvent(s) => {
+                if s == "white" {
+                        setter.begin_set_parameter(&self.params.noise_type);
+                        setter.set_parameter(&self.params.noise_type, noise::NoiseType::White);
+                        setter.end_set_parameter(&self.params.noise_type);
+                    } else if s == "pink" {
+                        setter.begin_set_parameter(&self.params.noise_type);
+                        setter.set_parameter(&self.params.noise_type, noise::NoiseType::Pink);
+                        setter.end_set_parameter(&self.params.noise_type);
+                    }
             }
         });
     }
@@ -102,7 +108,7 @@ pub(crate) fn create(
                                             Color::transparent()
                                         })
                                         .on_press(move |cx| {
-                                            cx.emit(ParamChangeEvent::NoiseEvent(idx));
+                                            cx.emit(ParamChangeEvent::NoiseEvent(item.get(cx)));
                                             cx.emit(views::PopupEvent::Close);
                                         });
                                     }
