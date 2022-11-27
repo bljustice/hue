@@ -1,16 +1,17 @@
-
-use nih_plug::prelude::{Params, FloatParam, FloatRange, SmoothingStyle, formatters, util, EnumParam, Enum};
+use nih_plug::prelude::{
+    formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
+};
 use nih_plug_vizia::ViziaState;
 use std::{mem, sync::Arc, thread::Thread};
 
-use rand::{thread_rng, rngs::StdRng, SeedableRng, Rng};
 use crate::editor;
+use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 
 pub struct Noise {
     pub params: Arc<NoiseParams>,
     pub rng: StdRng,
     pub white: White,
-    pub pink: Pink
+    pub pink: Pink,
 }
 
 impl Default for Noise {
@@ -53,19 +54,18 @@ pub struct Pink {
 }
 
 impl Pink {
-
     const MAX_RANDOM_ROWS: usize = 30;
     const RANDOM_BITS: usize = 24;
     const RANDOM_SHIFT: usize = std::mem::size_of::<i64>() * 8 - Pink::RANDOM_BITS;
     const INDEX_MASK: i32 = (1 << (Pink::MAX_RANDOM_ROWS - 1)) - 1;
-    const SCALAR: f32 = 1.0 / ((Pink::MAX_RANDOM_ROWS + 1) * (1 << (Pink::RANDOM_BITS - 1)) as usize) as f32;
+    const SCALAR: f32 =
+        1.0 / ((Pink::MAX_RANDOM_ROWS + 1) * (1 << (Pink::RANDOM_BITS - 1)) as usize) as f32;
 
     pub fn new() -> Self {
         Pink {
             rows: [0; Pink::MAX_RANDOM_ROWS],
             running_sum: 0,
             index: 0,
-
         }
     }
 }
@@ -89,7 +89,7 @@ impl NoiseConfig for Pink {
                 num_zeroes += 1;
             }
 
-            self.running_sum -= self.rows[num_zeroes];         
+            self.running_sum -= self.rows[num_zeroes];
             new_random = rng.gen::<i64>() >> Pink::RANDOM_SHIFT;
             self.running_sum += new_random;
             self.rows[num_zeroes] = new_random;
@@ -110,7 +110,6 @@ pub enum NoiseType {
 
 #[derive(Params)]
 pub struct NoiseParams {
-
     #[persist = "editor-state"]
     pub editor_state: Arc<ViziaState>,
 
@@ -119,7 +118,6 @@ pub struct NoiseParams {
 
     #[id = "noise type"]
     pub noise_type: EnumParam<NoiseType>,
-
 }
 
 impl Default for NoiseParams {
@@ -145,4 +143,3 @@ impl Default for NoiseParams {
         }
     }
 }
-

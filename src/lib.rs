@@ -23,10 +23,7 @@ impl Plugin for noise::Noise {
     }
 
     fn editor(&self) -> Option<Box<dyn Editor>> {
-        editor::create(
-            self.params.clone(),
-            self.params.editor_state.clone(),
-        )
+        editor::create(self.params.clone(), self.params.editor_state.clone())
     }
 
     fn accepts_bus_config(&self, config: &BusConfig) -> bool {
@@ -44,7 +41,7 @@ impl Plugin for noise::Noise {
     }
 
     fn reset(&mut self) {
-        // 
+        //
         match self.params.noise_type.value() {
             noise::NoiseType::WhiteParam => self.white.reset(),
             noise::NoiseType::PinkParam => self.pink.reset(),
@@ -77,7 +74,6 @@ impl Plugin for noise::Noise {
             // calculations that are only displayed on the GUI while the GUI is open
             if self.params.editor_state.is_open() {
                 amplitude = (amplitude / num_samples as f32).abs();
-
             }
         }
 
