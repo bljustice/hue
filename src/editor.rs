@@ -35,11 +35,11 @@ impl Model for UiData {
             ParamChangeEvent::NoiseEvent(s) => {
                 if s == "white" {
                         setter.begin_set_parameter(&self.params.noise_type);
-                        setter.set_parameter(&self.params.noise_type, noise::NoiseType::White);
+                        setter.set_parameter(&self.params.noise_type, noise::NoiseType::WhiteParam);
                         setter.end_set_parameter(&self.params.noise_type);
                     } else if s == "pink" {
                         setter.begin_set_parameter(&self.params.noise_type);
-                        setter.set_parameter(&self.params.noise_type, noise::NoiseType::Pink);
+                        setter.set_parameter(&self.params.noise_type, noise::NoiseType::PinkParam);
                         setter.end_set_parameter(&self.params.noise_type);
                     }
             }

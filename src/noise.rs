@@ -1,55 +1,111 @@
+
 use nih_plug::prelude::{Params, FloatParam, FloatRange, SmoothingStyle, formatters, util, EnumParam, Enum};
 use nih_plug_vizia::ViziaState;
-use nih_plug::context::GuiContext;
-use std::sync::Arc;
+use std::{mem, sync::Arc, thread::Thread};
 
-use rand::{self, Rng};
+use rand::{thread_rng, rngs::StdRng, SeedableRng, Rng};
 use crate::editor;
 
 pub struct Noise {
     pub params: Arc<NoiseParams>,
-    pub pink_b0: f32,
-    pub pink_b1: f32,
-    pub pink_b2: f32,
-    pub pink_b3: f32,
-    pub pink_b4: f32,
-    pub pink_b5: f32,
-    pub pink_b6: f32,
+    pub rng: StdRng,
+    pub white: White,
+    pub pink: Pink
 }
 
-impl Noise {
-    
-    pub fn white(&self) -> f32 {
-        // returns a float64 between 0 and 1
-        return rand::thread_rng().gen();
+impl Default for Noise {
+    fn default() -> Self {
+        Noise {
+            params: Arc::new(NoiseParams::default()),
+            rng: StdRng::from_rng(thread_rng()).unwrap(),
+            white: White::new(),
+            pink: Pink::new(),
+        }
     }
-
-
-    pub fn pink(&mut self) -> f32 {
-
-        // Pink noise via Paul Kellet's method
-
-        let white = self.white();
-
-        self.pink_b0 = 0.99886 * self.pink_b0 + white * 0.0555179;
-        self.pink_b1 = 0.99332 * self.pink_b1 + white * 0.0750759;
-        self.pink_b2 = 0.96900 * self.pink_b2 + white * 0.1538520;
-        self.pink_b3 = 0.86650 * self.pink_b3 + white * 0.3104856;
-        self.pink_b4 = 0.55000 * self.pink_b4 + white * 0.5329522;
-        self.pink_b5 = -0.7616 * self.pink_b5 - white * 0.0168980;
-        self.pink_b6 = white * 0.115926;
-        let pink = self.pink_b0 + self.pink_b1 + self.pink_b2 + self.pink_b3 + self.pink_b4 + self.pink_b5 + self.pink_b6 + white * 0.5362;
-        return pink;
-
-    }
-
 }
+
+pub trait NoiseConfig {
+    fn reset(&mut self);
+    fn next(&mut self, rng: &mut StdRng) -> f32;
+}
+
+pub struct White;
+
+impl White {
+    pub fn new() -> Self {
+        White {}
+    }
+}
+
+impl NoiseConfig for White {
+    fn reset(&mut self) {}
+
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        return rng.gen();
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Pink {
+    rows: [i64; Pink::MAX_RANDOM_ROWS],
+    running_sum: i64,
+    index: i32,
+}
+
+impl Pink {
+
+    const MAX_RANDOM_ROWS: usize = 30;
+    const RANDOM_BITS: usize = 24;
+    const RANDOM_SHIFT: usize = std::mem::size_of::<i64>() * 8 - Pink::RANDOM_BITS;
+    const INDEX_MASK: i32 = (1 << (Pink::MAX_RANDOM_ROWS - 1)) - 1;
+    const SCALAR: f32 = 1.0 / ((Pink::MAX_RANDOM_ROWS + 1) * (1 << (Pink::RANDOM_BITS - 1)) as usize) as f32;
+
+    pub fn new() -> Self {
+        Pink {
+            rows: [0; Pink::MAX_RANDOM_ROWS],
+            running_sum: 0,
+            index: 0,
+
+        }
+    }
+}
+
+impl NoiseConfig for Pink {
+    fn reset(&mut self) {
+        mem::replace(self, Pink::new());
+    }
+
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        // ported from here: https://github.com/PortAudio/portaudio/blob/master/examples/paex_pink.c
+        let mut new_random: i64;
+
+        self.index = (self.index + 1) & Pink::INDEX_MASK;
+        if self.index != 0 {
+            let mut num_zeroes = 0;
+            let mut n = self.index;
+
+            while (n & 1) == 0 {
+                n = n >> 1;
+                num_zeroes += 1;
+            }
+
+            self.running_sum -= self.rows[num_zeroes];         
+            new_random = rng.gen::<i64>() >> Pink::RANDOM_SHIFT;
+            self.running_sum += new_random;
+            self.rows[num_zeroes] = new_random;
+        }
+
+        new_random = rng.gen::<i64>() >> Pink::RANDOM_SHIFT;
+        return (self.running_sum + new_random) as f32 * Pink::SCALAR;
+    }
+}
+
 #[derive(Enum, PartialEq)]
 pub enum NoiseType {
     #[id = "white"]
-    White,
+    WhiteParam,
     #[id = "pink"]
-    Pink,
+    PinkParam,
 }
 
 #[derive(Params)]
@@ -66,21 +122,6 @@ pub struct NoiseParams {
 
 }
 
-impl Default for Noise {
-    fn default() -> Self {
-        Self {
-            params: Arc::new(NoiseParams::default()),
-            pink_b0: 0.0,
-            pink_b1: 0.0,
-            pink_b2: 0.0,
-            pink_b3: 0.0,
-            pink_b4: 0.0,
-            pink_b5: 0.0,
-            pink_b6: 0.0,
-        }
-    }
-}
-
 impl Default for NoiseParams {
     fn default() -> Self {
         Self {
@@ -91,8 +132,8 @@ impl Default for NoiseParams {
                 util::db_to_gain(0.0),
                 FloatRange::Skewed {
                     min: util::db_to_gain(-30.0),
-                    max: util::db_to_gain(30.0),
-                    factor: FloatRange::gain_skew_factor(-30.0, 30.0),
+                    max: util::db_to_gain(6.0),
+                    factor: FloatRange::gain_skew_factor(-30.0, 6.0),
                 },
             )
             .with_smoother(SmoothingStyle::Logarithmic(50.0))
@@ -100,7 +141,7 @@ impl Default for NoiseParams {
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
             .with_string_to_value(formatters::s2v_f32_gain_to_db()),
 
-            noise_type: EnumParam::new("white", NoiseType::White),
+            noise_type: EnumParam::new("Noise Type", NoiseType::WhiteParam),
         }
     }
 }

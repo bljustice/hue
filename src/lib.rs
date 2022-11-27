@@ -1,5 +1,5 @@
 use nih_plug::prelude::*;
-use nih_plug_vizia::vizia::context;
+use noise::NoiseConfig;
 use std::sync::Arc;
 
 mod editor;
@@ -43,6 +43,14 @@ impl Plugin for noise::Noise {
         true
     }
 
+    fn reset(&mut self) {
+        // 
+        match self.params.noise_type.value() {
+            noise::NoiseType::WhiteParam => self.white.reset(),
+            noise::NoiseType::PinkParam => self.pink.reset(),
+        }
+    }
+
     fn process(
         &mut self,
         buffer: &mut Buffer,
@@ -56,14 +64,13 @@ impl Plugin for noise::Noise {
             let gain = self.params.gain.smoothed.next();
 
             let noise_sample = match self.params.noise_type.value() {
-                noise::NoiseType::White => self.white(),
-                noise::NoiseType::Pink => self.pink(),
+                noise::NoiseType::WhiteParam => self.white.next(&mut self.rng),
+                noise::NoiseType::PinkParam => self.pink.next(&mut self.rng),
             };
+
             for sample in channel_samples {
-                // *sample *= gain;
                 *sample = noise_sample * gain;
                 amplitude += *sample;
-
             }
 
             // To save resources, a plugin can (and probably should!) only perform expensive
