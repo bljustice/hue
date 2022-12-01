@@ -42,7 +42,7 @@ impl NoiseConfig for White {
     fn reset(&mut self) {}
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        return rng.gen();
+        return rng.gen_range(-1.0..1.0);
     }
 }
 
