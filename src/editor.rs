@@ -27,17 +27,17 @@ enum ParamChangeEvent {
 }
 
 impl Model for UiData {
-    fn event(&mut self, cx: &mut EventContext, event: &mut Event) {
+    fn event(&mut self, _cx: &mut EventContext, event: &mut Event) {
         let setter = ParamSetter::new(self.gui_context.as_ref());
         event.map(|e, _| match e {
             ParamChangeEvent::NoiseEvent(s) => {
                 if s == "white" {
                     setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::WhiteParam);
+                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::White);
                     setter.end_set_parameter(&self.params.noise_type);
                 } else if s == "pink" {
                     setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::PinkParam);
+                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::Pink);
                     setter.end_set_parameter(&self.params.noise_type);
                 }
             }
@@ -65,7 +65,6 @@ pub(crate) fn create(
         .build(cx);
 
         ResizeHandle::new(cx);
-
         VStack::new(cx, |cx| {
             Label::new(cx, "noisegen")
                 .font(assets::NOTO_SANS_THIN)
@@ -86,7 +85,7 @@ pub(crate) fn create(
                 },
                 move |cx| {
                     // List of options
-                    List::new(cx, UiData::noise_types, move |cx, idx, item| {
+                    List::new(cx, UiData::noise_types, move |cx, _idx, item| {
                         VStack::new(cx, move |cx| {
                             Binding::new(
                                 cx,

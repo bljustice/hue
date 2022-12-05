@@ -2,7 +2,7 @@ use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
-use std::{mem, sync::Arc, thread::Thread};
+use std::{mem, sync::Arc};
 
 use crate::editor;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
@@ -42,7 +42,7 @@ impl NoiseConfig for White {
     fn reset(&mut self) {}
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        return rng.gen_range(-1.0..1.0);
+        return rng.gen_range(-1.0..1.0) / 8.0;
     }
 }
 
@@ -103,9 +103,9 @@ impl NoiseConfig for Pink {
 #[derive(Enum, PartialEq)]
 pub enum NoiseType {
     #[id = "white"]
-    WhiteParam,
+    White,
     #[id = "pink"]
-    PinkParam,
+    Pink,
 }
 
 #[derive(Params)]
@@ -139,7 +139,7 @@ impl Default for NoiseParams {
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
             .with_string_to_value(formatters::s2v_f32_gain_to_db()),
 
-            noise_type: EnumParam::new("Noise Type", NoiseType::WhiteParam),
+            noise_type: EnumParam::new("Noise Type", NoiseType::White),
         }
     }
 }

@@ -34,7 +34,7 @@ impl Plugin for noise::Noise {
     fn initialize(
         &mut self,
         _bus_config: &BusConfig,
-        buffer_config: &BufferConfig,
+        _buffer_config: &BufferConfig,
         _context: &mut impl InitContext,
     ) -> bool {
         true
@@ -43,8 +43,8 @@ impl Plugin for noise::Noise {
     fn reset(&mut self) {
         //
         match self.params.noise_type.value() {
-            noise::NoiseType::WhiteParam => self.white.reset(),
-            noise::NoiseType::PinkParam => self.pink.reset(),
+            noise::NoiseType::White => self.white.reset(),
+            noise::NoiseType::Pink => self.pink.reset(),
         }
     }
 
@@ -61,8 +61,8 @@ impl Plugin for noise::Noise {
             let gain = self.params.gain.smoothed.next();
 
             let noise_sample = match self.params.noise_type.value() {
-                noise::NoiseType::WhiteParam => self.white.next(&mut self.rng),
-                noise::NoiseType::PinkParam => self.pink.next(&mut self.rng),
+                noise::NoiseType::White => self.white.next(&mut self.rng),
+                noise::NoiseType::Pink => self.pink.next(&mut self.rng),
             };
 
             for sample in channel_samples {
