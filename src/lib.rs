@@ -1,11 +1,12 @@
 use nih_plug::prelude::*;
+use noise::NoiseConfig;
 use std::sync::Arc;
 
 mod editor;
 mod noise;
 
 impl Plugin for noise::Noise {
-    const NAME: &'static str = "NoiseGen";
+    const NAME: &'static str = "noisegen";
     const VENDOR: &'static str = "";
     const URL: &'static str = "";
     const EMAIL: &'static str = "";
@@ -22,10 +23,7 @@ impl Plugin for noise::Noise {
     }
 
     fn editor(&self) -> Option<Box<dyn Editor>> {
-        editor::create(
-            self.params.clone(),
-            self.params.editor_state.clone(),
-        )
+        editor::create(self.params.clone(), self.params.editor_state.clone())
     }
 
     fn accepts_bus_config(&self, config: &BusConfig) -> bool {
@@ -36,10 +34,18 @@ impl Plugin for noise::Noise {
     fn initialize(
         &mut self,
         _bus_config: &BusConfig,
-        buffer_config: &BufferConfig,
+        _buffer_config: &BufferConfig,
         _context: &mut impl InitContext,
     ) -> bool {
         true
+    }
+
+    fn reset(&mut self) {
+        //
+        match self.params.noise_type.value() {
+            noise::NoiseType::White => self.white.reset(),
+            noise::NoiseType::Pink => self.pink.reset(),
+        }
     }
 
     fn process(
@@ -53,18 +59,21 @@ impl Plugin for noise::Noise {
             let num_samples = channel_samples.len();
 
             let gain = self.params.gain.smoothed.next();
-            for sample in channel_samples {
-                // *sample *= gain;
-                *sample = self.white() * gain;
-                amplitude += *sample;
 
+            let noise_sample = match self.params.noise_type.value() {
+                noise::NoiseType::White => self.white.next(&mut self.rng),
+                noise::NoiseType::Pink => self.pink.next(&mut self.rng),
+            };
+
+            for sample in channel_samples {
+                *sample = noise_sample * gain;
+                amplitude += *sample;
             }
 
             // To save resources, a plugin can (and probably should!) only perform expensive
             // calculations that are only displayed on the GUI while the GUI is open
             if self.params.editor_state.is_open() {
                 amplitude = (amplitude / num_samples as f32).abs();
-
             }
         }
 
