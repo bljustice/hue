@@ -39,6 +39,10 @@ impl Model for UiData {
                     setter.begin_set_parameter(&self.params.noise_type);
                     setter.set_parameter(&self.params.noise_type, noise::NoiseType::Pink);
                     setter.end_set_parameter(&self.params.noise_type);
+                } else if s == "brown" {
+                    setter.begin_set_parameter(&self.params.noise_type);
+                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::Brown);
+                    setter.end_set_parameter(&self.params.noise_type);
                 }
             }
         });
@@ -60,7 +64,7 @@ pub(crate) fn create(
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
-            noise_types: vec!["white".to_string(), "pink".to_string()],
+            noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string()],
         }
         .build(cx);
 

@@ -5,13 +5,14 @@ use nih_plug_vizia::ViziaState;
 use std::{mem, sync::Arc};
 
 use crate::editor;
-use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
+use rand::{rngs::{StdRng}, thread_rng, Rng, SeedableRng};
 
 pub struct Noise {
     pub params: Arc<NoiseParams>,
     pub rng: StdRng,
     pub white: White,
     pub pink: Pink,
+    pub brown: Brown,
 }
 
 impl Default for Noise {
@@ -21,6 +22,7 @@ impl Default for Noise {
             rng: StdRng::from_rng(thread_rng()).unwrap(),
             white: White::new(),
             pink: Pink::new(),
+            brown: Brown::new(0.1)
         }
     }
 }
@@ -100,12 +102,41 @@ impl NoiseConfig for Pink {
     }
 }
 
+pub struct Brown {
+    current_sample: f32,
+    leak: f32,
+}
+
+impl Brown {
+    fn new(leak: f32) -> Self {
+        Brown {
+            current_sample: 0.0,
+            leak: leak,
+        }
+    }
+}
+
+impl NoiseConfig for Brown {
+    fn reset(&mut self) {
+        mem::replace(self, Brown::new(0.1,));
+    }
+
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        let white = rng.gen_range(-1.0..1.0);
+        self.current_sample = (1.0 - self.leak) * self.current_sample + white;
+        return self.current_sample;
+    }
+    
+}
+
 #[derive(Enum, PartialEq)]
 pub enum NoiseType {
     #[id = "white"]
     White,
     #[id = "pink"]
     Pink,
+    #[id = "brown"]
+    Brown,
 }
 
 #[derive(Params)]
