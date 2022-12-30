@@ -5,7 +5,7 @@ use nih_plug_vizia::ViziaState;
 use std::{mem, sync::Arc};
 
 use crate::editor;
-use rand::{rngs::{StdRng}, thread_rng, Rng, SeedableRng};
+use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal};
 
 fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
@@ -35,7 +35,7 @@ impl Default for Noise {
             rng: StdRng::from_rng(thread_rng()).unwrap(),
             white: White::new(),
             pink: Pink::new(),
-            brown: Brown::new(0.1)
+            brown: Brown::new(0.1),
         }
     }
 }
@@ -139,7 +139,7 @@ impl NoiseConfig for Brown {
         let white = get_norm_dist_white_noise(rng);
         self.current_sample = (1.0 - self.leak) * self.current_sample + white;
         return self.current_sample;
-    } 
+    }
 }
 
 #[derive(Enum, PartialEq)]
