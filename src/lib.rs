@@ -45,6 +45,7 @@ impl Plugin for noise::Noise {
         match self.params.noise_type.value() {
             noise::NoiseType::White => self.white.reset(),
             noise::NoiseType::Pink => self.pink.reset(),
+            noise::NoiseType::Brown => self.brown.reset(),
         }
     }
 
@@ -63,6 +64,7 @@ impl Plugin for noise::Noise {
             let noise_sample = match self.params.noise_type.value() {
                 noise::NoiseType::White => self.white.next(&mut self.rng),
                 noise::NoiseType::Pink => self.pink.next(&mut self.rng),
+                noise::NoiseType::Brown => self.brown.next(&mut self.rng),
             };
 
             for sample in channel_samples {
