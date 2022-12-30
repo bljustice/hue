@@ -6,6 +6,19 @@ use std::{mem, sync::Arc};
 
 use crate::editor;
 use rand::{rngs::{StdRng}, thread_rng, Rng, SeedableRng};
+use rand_distr::{Distribution, Normal};
+
+fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
+    let normal_dist = Normal::new(0.0, 1.0).unwrap();
+    let random_sample = normal_dist.sample(rng) as f32;
+
+    let white_noise_sample = match random_sample {
+        i if i <= -1.0 => -1.0,
+        i if i >= 1.0 => 1.0,
+        _ => random_sample,
+    };
+    return white_noise_sample;
+}
 
 pub struct Noise {
     pub params: Arc<NoiseParams>,
@@ -44,7 +57,8 @@ impl NoiseConfig for White {
     fn reset(&mut self) {}
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        return rng.gen_range(-1.0..1.0) / 8.0;
+        let white_noise_sample = get_norm_dist_white_noise(rng);
+        return white_noise_sample;
     }
 }
 
@@ -118,15 +132,14 @@ impl Brown {
 
 impl NoiseConfig for Brown {
     fn reset(&mut self) {
-        mem::replace(self, Brown::new(0.1,));
+        mem::replace(self, Brown::new(0.1));
     }
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        let white = rng.gen_range(-1.0..1.0);
+        let white = get_norm_dist_white_noise(rng);
         self.current_sample = (1.0 - self.leak) * self.current_sample + white;
         return self.current_sample;
-    }
-    
+    } 
 }
 
 #[derive(Enum, PartialEq)]
