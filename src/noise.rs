@@ -142,7 +142,7 @@ impl NoiseConfig for Brown {
     }
 }
 
-#[derive(Enum, PartialEq)]
+#[derive(Enum, PartialEq, Debug)]
 pub enum NoiseType {
     #[id = "white"]
     White,
