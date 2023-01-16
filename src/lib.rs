@@ -23,7 +23,7 @@ impl Plugin for noise::Noise {
     }
 
     fn editor(&self) -> Option<Box<dyn Editor>> {
-        editor::create(self.params.clone(), self.params.editor_state.clone())
+        editor::create(self.params.clone(), self.current_val.clone(), self.params.editor_state.clone())
     }
 
     fn accepts_bus_config(&self, config: &BusConfig) -> bool {
@@ -41,7 +41,6 @@ impl Plugin for noise::Noise {
     }
 
     fn reset(&mut self) {
-        //
         match self.params.noise_type.value() {
             noise::NoiseType::White => self.white.reset(),
             noise::NoiseType::Pink => self.pink.reset(),
@@ -69,6 +68,7 @@ impl Plugin for noise::Noise {
 
             for sample in channel_samples {
                 *sample = noise_sample * gain;
+                self.current_val.store(*sample, std::sync::atomic::Ordering::Relaxed);
                 amplitude += *sample;
             }
 
