@@ -7,7 +7,7 @@ use std::{mem, sync::Arc};
 
 use crate::editor;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
-use rand_distr::{Distribution, Normal};
+use rand_distr::{Distribution, Normal, Uniform};
 
 fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
     let normal_dist = Normal::new(0.0, 1.0).unwrap();
@@ -19,6 +19,20 @@ fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
         _ => random_sample,
     };
     return white_noise_sample;
+}
+
+fn get_uniform_dist_white_noise(rng: &mut StdRng) -> f32 {
+
+    let uniform_dist = Uniform::new(-1.0, 1.0);
+    let random_sample = uniform_dist.sample(rng) as f32;
+
+    let normalized_sample = match random_sample {
+        i if i <= -1.0 => -1.0,
+        i if i >= 1.0 => 1.0,
+        _ => random_sample,
+    };
+    return normalized_sample;
+
 }
 
 pub struct Noise {
@@ -139,8 +153,8 @@ impl NoiseConfig for Brown {
     }
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        let white = get_norm_dist_white_noise(rng);
-        self.current_sample = (1.0 - self.leak) * self.current_sample + white;
+        let white = get_uniform_dist_white_noise(rng);
+        self.current_sample = self.current_sample + self.leak * (white - self.current_sample);
         return self.current_sample;
     }
 }

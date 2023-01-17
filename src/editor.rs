@@ -79,14 +79,6 @@ pub(crate) fn create(
             move |cx, lens| {
                 let noise_color = lens.get(cx);
                 build_gui(cx).background_color(change_plugin_color(&noise_color));
-                Binding::new(
-                    cx,
-                    UiData::current_val,
-                    move |cx, lens| {
-                        let sample_val = lens.get(cx).load(std::sync::atomic::Ordering::Relaxed).to_string();
-                        Label::new(cx, &sample_val);
-                    }
-                )
             },
         )
     })
@@ -147,6 +139,14 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                     });
                 });
             },
+        );
+        Binding::new(
+            cx,
+            UiData::current_val,
+            move |cx, lens| {
+                let sample_val = lens.get(cx).load(std::sync::atomic::Ordering::Relaxed).to_string();
+                Label::new(cx, &sample_val);
+            }
         );
     })
     .row_between(Pixels(0.0))
