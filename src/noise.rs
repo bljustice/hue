@@ -12,27 +12,13 @@ use rand_distr::{Distribution, Normal, Uniform};
 fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
     let normal_dist = Normal::new(0.0, 1.0).unwrap();
     let random_sample = normal_dist.sample(rng) as f32;
-
-    let white_noise_sample = match random_sample {
-        i if i <= -1.0 => -1.0,
-        i if i >= 1.0 => 1.0,
-        _ => random_sample,
-    };
-    return white_noise_sample;
+    return random_sample.clamp(-1.0, 1.0);
 }
 
 fn get_uniform_dist_white_noise(rng: &mut StdRng) -> f32 {
-
     let uniform_dist = Uniform::new(-1.0, 1.0);
     let random_sample = uniform_dist.sample(rng) as f32;
-
-    let normalized_sample = match random_sample {
-        i if i <= -1.0 => -1.0,
-        i if i >= 1.0 => 1.0,
-        _ => random_sample,
-    };
-    return normalized_sample;
-
+    return random_sample.clamp(-1.0, 1.0);
 }
 
 pub struct Noise {
@@ -46,12 +32,12 @@ pub struct Noise {
 
 impl Default for Noise {
     fn default() -> Self {
-        Noise {
+        Self {
             params: Arc::new(NoiseParams::default()),
             rng: StdRng::from_rng(thread_rng()).unwrap(),
             white: White::new(),
             pink: Pink::new(),
-            brown: Brown::new(0.1),
+            brown: Brown::new(0.01),
             current_val: Arc::new(AtomicF32::new(0.0)),
         }
     }
@@ -66,7 +52,7 @@ pub struct White;
 
 impl White {
     pub fn new() -> Self {
-        White {}
+        Self {}
     }
 }
 
@@ -140,21 +126,21 @@ pub struct Brown {
 
 impl Brown {
     fn new(leak: f32) -> Self {
-        Brown {
+        Self {
             current_sample: 0.0,
-            leak: leak,
+            leak,
         }
     }
 }
 
 impl NoiseConfig for Brown {
     fn reset(&mut self) {
-        mem::replace(self, Brown::new(0.1));
+        mem::replace(self, Brown::new(0.01));
     }
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
         let white = get_uniform_dist_white_noise(rng);
-        self.current_sample = self.current_sample + self.leak * (white - self.current_sample);
+        self.current_sample = ((1.0 - self.leak) * self.current_sample + (self.leak * white)).clamp(-1.0, 1.0);
         return self.current_sample;
     }
 }

@@ -8,7 +8,7 @@ use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
 
 use std::sync::Arc;
 
-use crate::noise::{self, NoiseType};
+use crate::noise;
 
 /// VIZIA uses points instead of pixels for text
 const POINT_SCALE: f32 = 0.75;
