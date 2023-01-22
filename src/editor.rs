@@ -147,6 +147,10 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                 .to_string();
             Label::new(cx, &sample_val);
         });
+        Binding::new(cx, UiData::params.map(|p| p.gain.smoothed.next()), move |cx, lens| {
+            let g = lens.get(cx);
+            Label::new(cx, &g.to_string());
+        });
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))

@@ -60,7 +60,7 @@ impl NoiseConfig for White {
     fn reset(&mut self) {}
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        let white_noise_sample = get_norm_dist_white_noise(rng);
+        let white_noise_sample = get_norm_dist_white_noise(rng) * 0.1;
         return white_noise_sample;
     }
 }
