@@ -37,7 +37,7 @@ impl Default for Noise {
             rng: StdRng::from_rng(thread_rng()).unwrap(),
             white: White::new(),
             pink: Pink::new(),
-            brown: Brown::new(0.01),
+            brown: Brown::new(0.99),
             current_val: Arc::new(AtomicF32::new(0.0)),
         }
     }
@@ -135,12 +135,12 @@ impl Brown {
 
 impl NoiseConfig for Brown {
     fn reset(&mut self) {
-        mem::replace(self, Brown::new(0.01));
+        mem::replace(self, Brown::new(0.99));
     }
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
         let white = get_uniform_dist_white_noise(rng);
-        self.current_sample = ((1.0 - self.leak) * self.current_sample + (self.leak * white)).clamp(-1.0, 1.0);
+        self.current_sample = ((self.leak * self.current_sample) + (1.0 - self.leak) * white).clamp(-1.0, 1.0);
         return self.current_sample;
     }
 }
