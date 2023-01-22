@@ -140,14 +140,13 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                 });
             },
         );
-        Binding::new(
-            cx,
-            UiData::current_val,
-            move |cx, lens| {
-                let sample_val = lens.get(cx).load(std::sync::atomic::Ordering::Relaxed).to_string();
-                Label::new(cx, &sample_val);
-            }
-        );
+        Binding::new(cx, UiData::current_val, move |cx, lens| {
+            let sample_val = lens
+                .get(cx)
+                .load(std::sync::atomic::Ordering::Relaxed)
+                .to_string();
+            Label::new(cx, &sample_val);
+        });
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))

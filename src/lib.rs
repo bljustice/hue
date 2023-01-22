@@ -23,7 +23,11 @@ impl Plugin for noise::Noise {
     }
 
     fn editor(&self) -> Option<Box<dyn Editor>> {
-        editor::create(self.params.clone(), self.current_val.clone(), self.params.editor_state.clone())
+        editor::create(
+            self.params.clone(),
+            self.current_val.clone(),
+            self.params.editor_state.clone(),
+        )
     }
 
     fn accepts_bus_config(&self, config: &BusConfig) -> bool {
@@ -55,9 +59,6 @@ impl Plugin for noise::Noise {
         _context: &mut impl ProcessContext,
     ) -> ProcessStatus {
         for channel_samples in buffer.iter_samples() {
-            let mut amplitude = 0.0;
-            let num_samples = channel_samples.len();
-
             let gain = self.params.gain.smoothed.next();
 
             let noise_sample = match self.params.noise_type.value() {
@@ -68,14 +69,8 @@ impl Plugin for noise::Noise {
 
             for sample in channel_samples {
                 *sample = noise_sample * gain;
-                self.current_val.store(*sample, std::sync::atomic::Ordering::Relaxed);
-                amplitude += *sample;
-            }
-
-            // To save resources, a plugin can (and probably should!) only perform expensive
-            // calculations that are only displayed on the GUI while the GUI is open
-            if self.params.editor_state.is_open() {
-                amplitude = (amplitude / num_samples as f32).abs();
+                self.current_val
+                    .store(*sample, std::sync::atomic::Ordering::Relaxed);
             }
         }
 
