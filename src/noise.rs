@@ -1,3 +1,4 @@
+use atomic_float::AtomicF32;
 use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
@@ -6,18 +7,18 @@ use std::{mem, sync::Arc};
 
 use crate::editor;
 use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
-use rand_distr::{Distribution, Normal};
+use rand_distr::{Distribution, Normal, Uniform};
 
 fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
     let normal_dist = Normal::new(0.0, 1.0).unwrap();
     let random_sample = normal_dist.sample(rng) as f32;
+    return random_sample.clamp(-1.0, 1.0);
+}
 
-    let white_noise_sample = match random_sample {
-        i if i <= -1.0 => -1.0,
-        i if i >= 1.0 => 1.0,
-        _ => random_sample,
-    };
-    return white_noise_sample;
+fn get_uniform_dist_white_noise(rng: &mut StdRng) -> f32 {
+    let uniform_dist = Uniform::new(-1.0, 1.0);
+    let random_sample = uniform_dist.sample(rng) as f32;
+    return random_sample.clamp(-1.0, 1.0);
 }
 
 pub struct Noise {
@@ -30,12 +31,12 @@ pub struct Noise {
 
 impl Default for Noise {
     fn default() -> Self {
-        Noise {
+        Self {
             params: Arc::new(NoiseParams::default()),
             rng: StdRng::from_rng(thread_rng()).unwrap(),
             white: White::new(),
             pink: Pink::new(),
-            brown: Brown::new(0.1),
+            brown: Brown::new(0.99),
         }
     }
 }
@@ -49,7 +50,7 @@ pub struct White;
 
 impl White {
     pub fn new() -> Self {
-        White {}
+        Self {}
     }
 }
 
@@ -57,7 +58,7 @@ impl NoiseConfig for White {
     fn reset(&mut self) {}
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        let white_noise_sample = get_norm_dist_white_noise(rng);
+        let white_noise_sample = get_norm_dist_white_noise(rng) * 0.1;
         return white_noise_sample;
     }
 }
@@ -123,21 +124,22 @@ pub struct Brown {
 
 impl Brown {
     fn new(leak: f32) -> Self {
-        Brown {
+        Self {
             current_sample: 0.0,
-            leak: leak,
+            leak,
         }
     }
 }
 
 impl NoiseConfig for Brown {
     fn reset(&mut self) {
-        mem::replace(self, Brown::new(0.1));
+        mem::replace(self, Brown::new(0.99));
     }
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        let white = get_norm_dist_white_noise(rng);
-        self.current_sample = (1.0 - self.leak) * self.current_sample + white;
+        let white = get_uniform_dist_white_noise(rng);
+        self.current_sample =
+            ((self.leak * self.current_sample) + (1.0 - self.leak) * white).clamp(-1.0, 1.0);
         return self.current_sample;
     }
 }
