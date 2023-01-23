@@ -21,7 +21,6 @@ struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
-    current_val: Arc<AtomicF32>,
 }
 
 #[derive(Debug)]
@@ -58,7 +57,6 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 
 pub(crate) fn create(
     params: Arc<noise::NoiseParams>,
-    current_val: Arc<AtomicF32>,
     editor_state: Arc<ViziaState>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
@@ -68,7 +66,6 @@ pub(crate) fn create(
             gui_context: context.clone(),
             params: params.clone(),
             noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string()],
-            current_val: current_val.clone(),
         }
         .build(cx);
 

@@ -27,7 +27,6 @@ pub struct Noise {
     pub white: White,
     pub pink: Pink,
     pub brown: Brown,
-    pub current_val: Arc<AtomicF32>,
 }
 
 impl Default for Noise {
@@ -38,7 +37,6 @@ impl Default for Noise {
             white: White::new(),
             pink: Pink::new(),
             brown: Brown::new(0.99),
-            current_val: Arc::new(AtomicF32::new(0.0)),
         }
     }
 }

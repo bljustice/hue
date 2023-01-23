@@ -25,7 +25,6 @@ impl Plugin for noise::Noise {
     fn editor(&self) -> Option<Box<dyn Editor>> {
         editor::create(
             self.params.clone(),
-            self.current_val.clone(),
             self.params.editor_state.clone(),
         )
     }
@@ -69,8 +68,6 @@ impl Plugin for noise::Noise {
 
             for sample in channel_samples {
                 *sample = noise_sample * gain;
-                self.current_val
-                    .store(*sample, std::sync::atomic::Ordering::Relaxed);
             }
         }
         ProcessStatus::Normal
