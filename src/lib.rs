@@ -73,7 +73,6 @@ impl Plugin for noise::Noise {
                     .store(*sample, std::sync::atomic::Ordering::Relaxed);
             }
         }
-
         ProcessStatus::Normal
     }
 }
