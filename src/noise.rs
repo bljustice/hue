@@ -1,4 +1,3 @@
-use atomic_float::AtomicF32;
 use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
@@ -6,7 +5,7 @@ use nih_plug_vizia::ViziaState;
 use std::{mem, sync::Arc};
 
 use crate::editor;
-use rand::{rngs::StdRng, thread_rng, Rng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
 fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
@@ -33,7 +32,7 @@ impl Default for Noise {
     fn default() -> Self {
         Self {
             params: Arc::new(NoiseParams::default()),
-            rng: StdRng::from_rng(thread_rng()).unwrap(),
+            rng: StdRng::from_entropy(),
             white: White::new(),
             pink: Pink::new(),
             brown: Brown::new(0.99),
