@@ -23,10 +23,7 @@ impl Plugin for noise::Noise {
     }
 
     fn editor(&self) -> Option<Box<dyn Editor>> {
-        editor::create(
-            self.params.clone(),
-            self.params.editor_state.clone(),
-        )
+        editor::create(self.params.clone(), self.params.editor_state.clone())
     }
 
     fn accepts_bus_config(&self, config: &BusConfig) -> bool {

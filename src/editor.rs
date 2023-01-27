@@ -1,4 +1,3 @@
-use atomic_float::AtomicF32;
 use nih_plug::context::{GuiContext, ParamSetter};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
