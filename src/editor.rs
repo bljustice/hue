@@ -1,11 +1,13 @@
+use atomic_float::AtomicF32;
 use nih_plug::context::{GuiContext, ParamSetter};
+use nih_plug::debug;
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
 
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
 use crate::noise;
 
@@ -21,6 +23,7 @@ struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
+    current_sample_val: Arc<AtomicF32>,
 }
 
 #[derive(Debug)]
@@ -62,6 +65,7 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 pub(crate) fn create(
     params: Arc<noise::NoiseParams>,
     editor_state: Arc<ViziaState>,
+    current_sample_val: Arc<AtomicF32>,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         cx.add_theme(STYLE);
@@ -69,6 +73,7 @@ pub(crate) fn create(
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
+            current_sample_val: current_sample_val.clone(),
             noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string()],
         }
         .build(cx);
@@ -160,19 +165,38 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
                         Label::new(cx, "Debug");
                         Label::new(cx, ICON_DOWN_OPEN).class("debug-dropdown-arrow");
                     })
-                    .class("title")
+                    .class("debug-dropdown-container")
                 },
                 |cx| {
-                    VStack::new(
+                    Binding::new(
                         cx,
-                        move | cx | {
-                            Label::new(cx, "This is the debug window");
+                        UiData::current_sample_val.map(|p| p.load(Ordering::Relaxed).to_string()),
+                        move |cx, lens| {
+                            VStack::new(
+                                cx,
+                                move | cx | {
+                                    HStack::new(
+                                        cx,
+                                        move | cx | {
+                                            let debug_sample_val = lens.get(cx);
+                                            let fmt_string = format!("Current sample {}", debug_sample_val);
+                                            Label::new(cx, &fmt_string)
+                                                .child_right(Pixels(20.0));        
+                                            Label::new(cx, "DB to Gain Val: ");
+                                        }
+                                    )
+                                    .class("debug-text-container");
+                                }
+                            )
+                            .height(Pixels(10.0))
+                            .background_color(Color::rgb(255, 255, 255))
+                            .class("debug-vstack-container");
                         }
-                    );
+                    )
                 }
             )
             .width(Pixels(PLUGIN_WIDTH))
-            .child_top(Pixels(110.0))
+            .child_top(Pixels(100.0))
             .color(Color::rgb(0x69, 0x69, 0x69));
         }
     );

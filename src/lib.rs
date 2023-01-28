@@ -1,6 +1,6 @@
 use nih_plug::prelude::*;
 use noise::NoiseConfig;
-use std::sync::Arc;
+use std::sync::{Arc, atomic::Ordering};
 
 mod editor;
 mod noise;
@@ -23,7 +23,7 @@ impl Plugin for noise::Noise {
     }
 
     fn editor(&self) -> Option<Box<dyn Editor>> {
-        editor::create(self.params.clone(), self.params.editor_state.clone())
+        editor::create(self.params.clone(), self.params.editor_state.clone(), self.current_sample_val.clone())
     }
 
     fn accepts_bus_config(&self, config: &BusConfig) -> bool {
@@ -65,6 +65,7 @@ impl Plugin for noise::Noise {
 
             for sample in channel_samples {
                 *sample = noise_sample * gain;
+                self.current_sample_val.store(noise_sample * gain, Ordering::Relaxed);
             }
         }
         ProcessStatus::Normal
