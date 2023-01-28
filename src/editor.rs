@@ -10,6 +10,7 @@ use std::sync::Arc;
 use crate::noise;
 
 /// VIZIA uses points instead of pixels for text
+const PLUGIN_WIDTH: f32 = 400.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{e75c}";
 
@@ -50,8 +51,12 @@ impl Model for UiData {
     }
 }
 
+// struct PluginUi {
+//     todo!();
+// }
+
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::from_size(400, 300)
+    ViziaState::from_size(PLUGIN_WIDTH as u32, 300)
 }
 
 pub(crate) fn create(
@@ -136,8 +141,40 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                 });
             },
         );
+        build_debug_window(cx);
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))
     .child_right(Stretch(1.0));
 }
+
+fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
+
+    return VStack::new(
+        cx,
+        move |cx| {
+            Dropdown::new(
+                cx,
+                move |cx| {
+                    HStack::new(cx, move |cx| {
+                        Label::new(cx, "Debug");
+                        Label::new(cx, ICON_DOWN_OPEN).class("debug-dropdown-arrow");
+                    })
+                    .class("title")
+                },
+                |cx| {
+                    VStack::new(
+                        cx,
+                        move | cx | {
+                            Label::new(cx, "This is the debug window");
+                        }
+                    );
+                }
+            )
+            .width(Pixels(PLUGIN_WIDTH))
+            .child_top(Pixels(110.0))
+            .color(Color::rgb(0x69, 0x69, 0x69));
+        }
+    );
+}
+ 
