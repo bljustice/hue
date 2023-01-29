@@ -1,6 +1,5 @@
 use atomic_float::AtomicF32;
 use nih_plug::context::{GuiContext, ParamSetter};
-use nih_plug::debug;
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
@@ -54,9 +53,6 @@ impl Model for UiData {
     }
 }
 
-// struct PluginUi {
-//     todo!();
-// }
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
     ViziaState::from_size(PLUGIN_WIDTH as u32, 300)
@@ -146,7 +142,9 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                 });
             },
         );
-        build_debug_window(cx);
+        if cfg!(debug_assertions) {
+            build_debug_window(cx);
+        }
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))
