@@ -166,31 +166,42 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
                     .class("debug-dropdown-container")
                 },
                 |cx| {
-                    Binding::new(
+                    VStack::new(
                         cx,
-                        UiData::current_sample_val.map(|p| p.load(Ordering::Relaxed).to_string()),
-                        move |cx, lens| {
-                            VStack::new(
+                        move |cx| {
+                            Binding::new(
                                 cx,
-                                move | cx | {
+                                UiData::current_sample_val.map(|p| p.load(Ordering::Relaxed).to_string()),
+                                move |cx, lens| {
                                     HStack::new(
                                         cx,
-                                        move | cx | {
+                                        move |cx| {
                                             let debug_sample_val = lens.get(cx);
-                                            let fmt_string = format!("Current sample {}", debug_sample_val);
-                                            Label::new(cx, &fmt_string)
-                                                .child_right(Pixels(20.0));        
-                                            Label::new(cx, "DB to Gain Val: ");
+                                            let sample_val_str = format!("current sample value: {}", &debug_sample_val);
+                                            Label::new(cx, &sample_val_str);
                                         }
-                                    )
-                                    .class("debug-text-container");
+                                    );
                                 }
-                            )
-                            .height(Pixels(10.0))
-                            .background_color(Color::rgb(255, 255, 255))
-                            .class("debug-vstack-container");
+                            );
+                            Binding::new(
+                                cx,
+                                UiData::params,
+                                move |cx, lens| {
+                                    HStack::new(
+                                        cx,
+                                        move |cx| {
+                                            let db_val = lens.get(cx);
+                                            let gain_val = nih_plug::util::db_to_gain(db_val.gain.value());
+                                            let gain_str = format!("dB to gain val: {}", &gain_val.to_string());
+                                            Label::new(cx, &gain_str);
+                                        }
+                                    );
+                                }
+                            );
                         }
                     )
+                    .height(Pixels(10.0))
+                    .background_color(Color::rgb(255, 255, 255));
                 }
             )
             .width(Pixels(PLUGIN_WIDTH))
