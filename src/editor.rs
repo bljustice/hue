@@ -1,11 +1,9 @@
-use atomic_float::AtomicF32;
 use nih_plug::context::{GuiContext, ParamSetter};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
-
 use std::sync::{Arc, atomic::Ordering};
 
 use crate::noise;
@@ -22,7 +20,7 @@ struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
-    current_sample_val: Arc<AtomicF32>,
+    debug: noise::Debug,
 }
 
 #[derive(Debug)]
@@ -61,7 +59,7 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 pub(crate) fn create(
     params: Arc<noise::NoiseParams>,
     editor_state: Arc<ViziaState>,
-    current_sample_val: Arc<AtomicF32>,
+    debug: noise::Debug,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         cx.add_theme(STYLE);
@@ -69,7 +67,7 @@ pub(crate) fn create(
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
-            current_sample_val: current_sample_val.clone(),
+            debug: debug.clone(),
             noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string()],
         }
         .build(cx);
@@ -158,16 +156,25 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
         move |cx| {
             Binding::new(
                 cx,
-                UiData::current_sample_val.map(|p| p.load(Ordering::Relaxed).to_string()),
+                UiData::debug.map(|p| {
+                    return vec![
+                        ("Curent sample value", p.current_sample_val.load(Ordering::Relaxed)),
+                        ("Min sample value seen", p.min_sample_val.load(Ordering::Relaxed)),
+                        ("Max sample value seen", p.max_sample_val.load(Ordering::Relaxed)),
+                    ]
+                }),
                 move |cx, lens| {
-                    HStack::new(
-                        cx,
-                        move |cx| {
-                            let debug_sample_val = lens.get(cx);
-                            let sample_val_str = format!("current sample value: {}", &debug_sample_val);
-                            Label::new(cx, &sample_val_str);
-                        }
-                    );
+                    let debug_vals = lens.get(cx);
+                    for val_tuple in debug_vals {
+                        HStack::new(
+                            cx,
+                            move |cx| {
+                                let (sample_str, sample_val) = val_tuple;
+                                let label_str = format!("{}: {}", &sample_str, &sample_val.to_string());
+                                Label::new(cx, &label_str);
+                            }
+                        );
+                    }
                 }
             );
             Binding::new(
