@@ -5,7 +5,7 @@ use std::sync::Arc;
 pub struct Debug {
     pub current_sample_val: Arc<AtomicF32>,
     pub max_sample_val: Arc<AtomicF32>,
-    pub min_sample_val: Arc<AtomicF32>,    
+    pub min_sample_val: Arc<AtomicF32>,
 }
 
 impl Default for Debug {

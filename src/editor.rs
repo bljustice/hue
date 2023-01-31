@@ -4,7 +4,7 @@ use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
-use std::sync::{Arc, atomic::Ordering};
+use std::sync::{atomic::Ordering, Arc};
 
 use crate::config;
 use crate::noise;
@@ -51,7 +51,6 @@ impl Model for UiData {
         });
     }
 }
-
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
     ViziaState::from_size(PLUGIN_WIDTH as u32, 300)
@@ -147,57 +146,55 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))
-    .child_right(Stretch(1.0))
+    .child_right(Stretch(1.0));
 }
 
 fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
-
-    return VStack::new(
-        cx,
-        move |cx| {
-            Binding::new(
-                cx,
-                UiData::debug.map(|p| {
-                    return vec![
-                        ("Curent sample value", p.current_sample_val.load(Ordering::Relaxed)),
-                        ("Min sample value seen", p.min_sample_val.load(Ordering::Relaxed)),
-                        ("Max sample value seen", p.max_sample_val.load(Ordering::Relaxed)),
-                    ]
-                }),
-                move |cx, lens| {
-                    let debug_vals = lens.get(cx);
-                    for val_tuple in debug_vals {
-                        HStack::new(
-                            cx,
-                            move |cx| {
-                                let (sample_str, sample_val) = val_tuple;
-                                let label_str = format!("{}: {}", &sample_str, &sample_val.to_string());
-                                Label::new(cx, &label_str);
-                            }
-                        );
-                    }
+    return VStack::new(cx, move |cx| {
+        Binding::new(
+            cx,
+            UiData::debug.map(|p| {
+                return vec![
+                    (
+                        "Curent sample value",
+                        p.current_sample_val.load(Ordering::Relaxed),
+                    ),
+                    (
+                        "Min sample value seen",
+                        p.min_sample_val.load(Ordering::Relaxed),
+                    ),
+                    (
+                        "Max sample value seen",
+                        p.max_sample_val.load(Ordering::Relaxed),
+                    ),
+                ];
+            }),
+            move |cx, lens| {
+                let debug_vals = lens.get(cx);
+                for val_tuple in debug_vals {
+                    HStack::new(cx, move |cx| {
+                        let (sample_str, sample_val) = val_tuple;
+                        let label_str = format!("{}: {}", &sample_str, &sample_val.to_string());
+                        Label::new(cx, &label_str);
+                    });
                 }
-            );
-            Binding::new(
-                cx,
-                UiData::params.map(|p| nih_plug::util::db_to_gain(p.gain.value())),
-                move |cx, lens| {
-                    HStack::new(
-                        cx,
-                        move |cx| {
-                            let gain_val = lens.get(cx);
-                            let gain_str = format!("dB to gain val: {}", &gain_val.to_string());
-                            Label::new(cx, &gain_str);
-                        }
-                    );
-                }
-            );
-        }
-    )
+            },
+        );
+        Binding::new(
+            cx,
+            UiData::params.map(|p| nih_plug::util::db_to_gain(p.gain.value())),
+            move |cx, lens| {
+                HStack::new(cx, move |cx| {
+                    let gain_val = lens.get(cx);
+                    let gain_str = format!("dB to gain val: {}", &gain_val.to_string());
+                    Label::new(cx, &gain_str);
+                });
+            },
+        );
+    })
     .width(Pixels(PLUGIN_WIDTH))
     .height(Pixels(10.0))
     .top(Pixels(50.0))
     .background_color(Color::rgb(255, 255, 255))
     .color(Color::rgb(0x69, 0x69, 0x69));
 }
- 

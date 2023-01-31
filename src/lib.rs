@@ -1,6 +1,6 @@
 use nih_plug::prelude::*;
 use noise::NoiseConfig;
-use std::sync::{Arc, atomic::Ordering};
+use std::sync::{atomic::Ordering, Arc};
 
 mod config;
 mod editor;
@@ -67,17 +67,23 @@ impl Plugin for noise::Noise {
                 noise::NoiseType::Pink => self.pink.next(&mut self.rng),
                 noise::NoiseType::Brown => self.brown.next(&mut self.rng),
             };
-            
+
             let final_sample = noise_sample * gain;
             for sample in channel_samples {
                 *sample = final_sample;
                 // this is useful for debugging the noise algorithm difference equations
                 if cfg!(debug_assertions) {
-                    self.debug.current_sample_val.store(final_sample, Ordering::Relaxed);
+                    self.debug
+                        .current_sample_val
+                        .store(final_sample, Ordering::Relaxed);
                     if final_sample > self.debug.max_sample_val.load(Ordering::Relaxed) {
-                        self.debug.max_sample_val.store(final_sample, Ordering::Relaxed);
+                        self.debug
+                            .max_sample_val
+                            .store(final_sample, Ordering::Relaxed);
                     } else if final_sample < self.debug.min_sample_val.load(Ordering::Relaxed) {
-                        self.debug.min_sample_val.store(final_sample, Ordering::Relaxed);
+                        self.debug
+                            .min_sample_val
+                            .store(final_sample, Ordering::Relaxed);
                     }
                 }
             }
