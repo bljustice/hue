@@ -2,6 +2,7 @@ use nih_plug::prelude::*;
 use noise::NoiseConfig;
 use std::sync::{Arc, atomic::Ordering};
 
+mod config;
 mod editor;
 mod noise;
 

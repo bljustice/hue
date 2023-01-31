@@ -6,6 +6,7 @@ use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
 use std::sync::{Arc, atomic::Ordering};
 
+use crate::config;
 use crate::noise;
 
 /// VIZIA uses points instead of pixels for text
@@ -20,7 +21,7 @@ struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
-    debug: noise::Debug,
+    debug: config::Debug,
 }
 
 #[derive(Debug)]
@@ -59,7 +60,7 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 pub(crate) fn create(
     params: Arc<noise::NoiseParams>,
     editor_state: Arc<ViziaState>,
-    debug: noise::Debug,
+    debug: config::Debug,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         cx.add_theme(STYLE);

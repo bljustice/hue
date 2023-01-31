@@ -1,10 +1,10 @@
-use atomic_float::AtomicF32;
 use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
 use std::{mem, sync::Arc};
 
+use crate::config;
 use crate::editor;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
@@ -27,7 +27,7 @@ pub struct Noise {
     pub white: White,
     pub pink: Pink,
     pub brown: Brown,
-    pub debug: Debug,
+    pub debug: config::Debug,
 }
 
 impl Default for Noise {
@@ -38,27 +38,11 @@ impl Default for Noise {
             white: White::new(),
             pink: Pink::new(),
             brown: Brown::new(0.99),
-            debug: Debug::default(),
+            debug: config::Debug::default(),
         }
     }
 }
 
-#[derive(Clone)]
-pub struct Debug {
-    pub current_sample_val: Arc<AtomicF32>,
-    pub max_sample_val: Arc<AtomicF32>,
-    pub min_sample_val: Arc<AtomicF32>,    
-}
-
-impl Default for Debug {
-    fn default() -> Self {
-        Self {
-            current_sample_val: Arc::new(AtomicF32::new(0.0)),
-            max_sample_val: Arc::new(AtomicF32::new(0.0)),
-            min_sample_val: Arc::new(AtomicF32::new(0.0)),
-        }
-    }
-}
 pub trait NoiseConfig {
     fn reset(&mut self);
     fn next(&mut self, rng: &mut StdRng) -> f32;
