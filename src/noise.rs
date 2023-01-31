@@ -4,6 +4,7 @@ use nih_plug::prelude::{
 use nih_plug_vizia::ViziaState;
 use std::{mem, sync::Arc};
 
+use crate::config;
 use crate::editor;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
@@ -26,6 +27,7 @@ pub struct Noise {
     pub white: White,
     pub pink: Pink,
     pub brown: Brown,
+    pub debug: config::Debug,
 }
 
 impl Default for Noise {
@@ -36,6 +38,7 @@ impl Default for Noise {
             white: White::new(),
             pink: Pink::new(),
             brown: Brown::new(0.99),
+            debug: config::Debug::default(),
         }
     }
 }

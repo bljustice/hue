@@ -4,12 +4,13 @@ use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
+use std::sync::{atomic::Ordering, Arc};
 
-use std::sync::Arc;
-
+use crate::config;
 use crate::noise;
 
 /// VIZIA uses points instead of pixels for text
+const PLUGIN_WIDTH: f32 = 400.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{e75c}";
 
@@ -20,6 +21,7 @@ struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
+    debug: config::Debug,
 }
 
 #[derive(Debug)]
@@ -51,12 +53,13 @@ impl Model for UiData {
 }
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::from_size(400, 300)
+    ViziaState::from_size(PLUGIN_WIDTH as u32, 300)
 }
 
 pub(crate) fn create(
     params: Arc<noise::NoiseParams>,
     editor_state: Arc<ViziaState>,
+    debug: config::Debug,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         cx.add_theme(STYLE);
@@ -64,6 +67,7 @@ pub(crate) fn create(
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
+            debug: debug.clone(),
             noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string()],
         }
         .build(cx);
@@ -136,8 +140,61 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                 });
             },
         );
+        if cfg!(debug_assertions) {
+            build_debug_window(cx);
+        }
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))
     .child_right(Stretch(1.0));
+}
+
+fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
+    return VStack::new(cx, move |cx| {
+        Binding::new(
+            cx,
+            UiData::debug.map(|p| {
+                return vec![
+                    (
+                        "Curent sample value",
+                        p.current_sample_val.load(Ordering::Relaxed),
+                    ),
+                    (
+                        "Min sample value seen",
+                        p.min_sample_val.load(Ordering::Relaxed),
+                    ),
+                    (
+                        "Max sample value seen",
+                        p.max_sample_val.load(Ordering::Relaxed),
+                    ),
+                ];
+            }),
+            move |cx, lens| {
+                let debug_vals = lens.get(cx);
+                for val_tuple in debug_vals {
+                    HStack::new(cx, move |cx| {
+                        let (sample_str, sample_val) = val_tuple;
+                        let label_str = format!("{}: {}", &sample_str, &sample_val.to_string());
+                        Label::new(cx, &label_str);
+                    });
+                }
+            },
+        );
+        Binding::new(
+            cx,
+            UiData::params.map(|p| nih_plug::util::db_to_gain(p.gain.value())),
+            move |cx, lens| {
+                HStack::new(cx, move |cx| {
+                    let gain_val = lens.get(cx);
+                    let gain_str = format!("dB to gain val: {}", &gain_val.to_string());
+                    Label::new(cx, &gain_str);
+                });
+            },
+        );
+    })
+    .width(Pixels(PLUGIN_WIDTH))
+    .height(Pixels(10.0))
+    .top(Pixels(50.0))
+    .background_color(Color::rgb(255, 255, 255))
+    .color(Color::rgb(0x69, 0x69, 0x69));
 }
