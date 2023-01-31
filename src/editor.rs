@@ -148,7 +148,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))
-    .child_right(Stretch(1.0));
+    .child_right(Stretch(1.0))
 }
 
 fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
@@ -156,58 +156,40 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
     return VStack::new(
         cx,
         move |cx| {
-            Dropdown::new(
+            Binding::new(
                 cx,
-                move |cx| {
-                    HStack::new(cx, move |cx| {
-                        Label::new(cx, "Debug");
-                        Label::new(cx, ICON_DOWN_OPEN).class("debug-dropdown-arrow");
-                    })
-                    .class("debug-dropdown-container")
-                },
-                |cx| {
-                    VStack::new(
+                UiData::current_sample_val.map(|p| p.load(Ordering::Relaxed).to_string()),
+                move |cx, lens| {
+                    HStack::new(
                         cx,
                         move |cx| {
-                            Binding::new(
-                                cx,
-                                UiData::current_sample_val.map(|p| p.load(Ordering::Relaxed).to_string()),
-                                move |cx, lens| {
-                                    HStack::new(
-                                        cx,
-                                        move |cx| {
-                                            let debug_sample_val = lens.get(cx);
-                                            let sample_val_str = format!("current sample value: {}", &debug_sample_val);
-                                            Label::new(cx, &sample_val_str);
-                                        }
-                                    );
-                                }
-                            );
-                            Binding::new(
-                                cx,
-                                UiData::params,
-                                move |cx, lens| {
-                                    HStack::new(
-                                        cx,
-                                        move |cx| {
-                                            let db_val = lens.get(cx);
-                                            let gain_val = nih_plug::util::db_to_gain(db_val.gain.value());
-                                            let gain_str = format!("dB to gain val: {}", &gain_val.to_string());
-                                            Label::new(cx, &gain_str);
-                                        }
-                                    );
-                                }
-                            );
+                            let debug_sample_val = lens.get(cx);
+                            let sample_val_str = format!("current sample value: {}", &debug_sample_val);
+                            Label::new(cx, &sample_val_str);
                         }
-                    )
-                    .height(Pixels(10.0))
-                    .background_color(Color::rgb(255, 255, 255));
+                    );
                 }
-            )
-            .width(Pixels(PLUGIN_WIDTH))
-            .child_top(Pixels(100.0))
-            .color(Color::rgb(0x69, 0x69, 0x69));
+            );
+            Binding::new(
+                cx,
+                UiData::params.map(|p| nih_plug::util::db_to_gain(p.gain.value())),
+                move |cx, lens| {
+                    HStack::new(
+                        cx,
+                        move |cx| {
+                            let gain_val = lens.get(cx);
+                            let gain_str = format!("dB to gain val: {}", &gain_val.to_string());
+                            Label::new(cx, &gain_str);
+                        }
+                    );
+                }
+            );
         }
-    );
+    )
+    .width(Pixels(PLUGIN_WIDTH))
+    .height(Pixels(10.0))
+    .top(Pixels(50.0))
+    .background_color(Color::rgb(255, 255, 255))
+    .color(Color::rgb(0x69, 0x69, 0x69));
 }
  
