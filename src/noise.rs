@@ -27,6 +27,7 @@ pub struct Noise {
     pub white: White,
     pub pink: Pink,
     pub brown: Brown,
+    pub violet: Violet,
     pub debug: config::Debug,
 }
 
@@ -38,6 +39,7 @@ impl Default for Noise {
             white: White::new(),
             pink: Pink::new(),
             brown: Brown::new(0.99),
+            violet: Violet::new(),
             debug: config::Debug::default(),
         }
     }
@@ -146,6 +148,31 @@ impl NoiseConfig for Brown {
     }
 }
 
+pub struct Violet {
+    previous_sample: f32,
+}
+
+impl Violet {
+    fn new() -> Self {
+        Self {
+            previous_sample: 0.0,
+        }
+    }
+}
+
+impl NoiseConfig for Violet {
+    fn reset(&mut self) {
+        mem::replace(self, Violet::new());
+    }
+
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        let white = get_norm_dist_white_noise(rng) * 0.1;
+        let violet = white - self.previous_sample;
+        self.previous_sample = white;
+        return violet;
+    }
+}
+
 #[derive(Enum, PartialEq, Debug)]
 pub enum NoiseType {
     #[id = "white"]
@@ -154,6 +181,8 @@ pub enum NoiseType {
     Pink,
     #[id = "brown"]
     Brown,
+    #[id = "violet"]
+    Violet,
 }
 
 #[derive(Params)]

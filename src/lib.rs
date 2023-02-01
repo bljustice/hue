@@ -50,6 +50,7 @@ impl Plugin for noise::Noise {
             noise::NoiseType::White => self.white.reset(),
             noise::NoiseType::Pink => self.pink.reset(),
             noise::NoiseType::Brown => self.brown.reset(),
+            noise::NoiseType::Violet => self.violet.reset(),
         }
     }
 
@@ -66,6 +67,7 @@ impl Plugin for noise::Noise {
                 noise::NoiseType::White => self.white.next(&mut self.rng),
                 noise::NoiseType::Pink => self.pink.next(&mut self.rng),
                 noise::NoiseType::Brown => self.brown.next(&mut self.rng),
+                noise::NoiseType::Violet => self.violet.next(&mut self.rng),
             };
 
             let final_sample = noise_sample * gain;
