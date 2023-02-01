@@ -46,6 +46,10 @@ impl Model for UiData {
                     setter.begin_set_parameter(&self.params.noise_type);
                     setter.set_parameter(&self.params.noise_type, noise::NoiseType::Brown);
                     setter.end_set_parameter(&self.params.noise_type);
+                } else if s == "violet" {
+                    setter.begin_set_parameter(&self.params.noise_type);
+                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::Violet);
+                    setter.end_set_parameter(&self.params.noise_type);
                 }
             }
         });
@@ -68,7 +72,7 @@ pub(crate) fn create(
             gui_context: context.clone(),
             params: params.clone(),
             debug: debug.clone(),
-            noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string()],
+            noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string(), "violet".to_string()],
         }
         .build(cx);
 
@@ -89,6 +93,7 @@ fn change_plugin_color(noise_color: &str) -> Color {
         "white" => Color::from("#F9F6EE"),
         "pink" => Color::from("#FFC0CB"),
         "brown" => Color::from("#C19A6B"),
+        "violet" => Color::from("#CF9FFF"),
         _ => Color::from("#F9F6EE"),
     };
 
