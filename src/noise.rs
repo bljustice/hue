@@ -2,10 +2,11 @@ use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
-use std::{mem, sync::Arc};
+use std::{mem, sync::{Arc, Mutex}};
 
 use crate::config;
 use crate::editor;
+use crate::spectrum::Spectrum;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
@@ -29,6 +30,7 @@ pub struct Noise {
     pub brown: Brown,
     pub violet: Violet,
     pub debug: config::Debug,
+    pub spectrum: Spectrum,
 }
 
 impl Default for Noise {
@@ -41,6 +43,7 @@ impl Default for Noise {
             brown: Brown::new(0.99),
             violet: Violet::new(),
             debug: config::Debug::default(),
+            spectrum: Spectrum::new(),
         }
     }
 }
