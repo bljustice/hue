@@ -1,12 +1,16 @@
+use atomic_float::AtomicF32;
 use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
-use std::{mem, sync::{Arc, Mutex}};
+use std::{
+    mem,
+    sync::{Arc, Mutex},
+};
 
 use crate::config;
 use crate::editor;
-use crate::spectrum::Spectrum;
+use crate::spectrum::Analyzer;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
@@ -30,11 +34,21 @@ pub struct Noise {
     pub brown: Brown,
     pub violet: Violet,
     pub debug: config::Debug,
-    pub spectrum: Spectrum,
+    pub samplerate: Arc<AtomicF32>,
+    pub analyzer_in: Analyzer,
+    pub analyzer_input: editor::SpectrumUI,
+    pub analyzer_out: Analyzer,
+    pub analyzer_output: editor::SpectrumUI,
 }
 
 impl Default for Noise {
     fn default() -> Self {
+        let (analyzer_in, spectrum_in) = Analyzer::new(44.1e3, 2, 2048);
+        let analyzer_input = Arc::new(Mutex::new(spectrum_in));
+        let (analyzer_out, spectrum_out) = Analyzer::new(44.1e3, 2, 2048);
+        let analyzer_output = Arc::new(Mutex::new(spectrum_out));
+        let samplerate = Arc::new(AtomicF32::new(44.1e3));
+
         Self {
             params: Arc::new(NoiseParams::default()),
             rng: StdRng::from_entropy(),
@@ -43,7 +57,11 @@ impl Default for Noise {
             brown: Brown::new(0.99),
             violet: Violet::new(),
             debug: config::Debug::default(),
-            spectrum: Spectrum::new(),
+            samplerate: samplerate,
+            analyzer_in: analyzer_in,
+            analyzer_input: analyzer_input,
+            analyzer_out: analyzer_out,
+            analyzer_output: analyzer_output,
         }
     }
 }

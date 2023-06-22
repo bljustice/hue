@@ -1,5 +1,5 @@
 use atomic_float::AtomicF32;
-use std::{sync::Arc, vec};
+use std::sync::Arc;
 
 #[derive(Clone)]
 pub struct Debug {

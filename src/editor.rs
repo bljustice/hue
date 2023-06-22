@@ -1,19 +1,23 @@
 use atomic_float::AtomicF32;
 use nih_plug::context::{GuiContext, ParamSetter};
+use nih_plug::nih_log;
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
+use realfft::{num_complex::Complex32, RealToComplex};
 use std::sync::{atomic::Ordering, Arc, Mutex};
-use realfft::num_complex::Complex32;
+use triple_buffer::Output;
 
-use crate::analyzer;
+use crate::analyzer::SpectrumAnalyzer;
 use crate::config;
 use crate::noise;
+use crate::spectrum::Spectrum;
 
 /// VIZIA uses points instead of pixels for text
 const PLUGIN_WIDTH: f32 = 400.0;
+const PLUGIN_HEIGHT: f32 = 600.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{e75c}";
 
@@ -29,14 +33,21 @@ const STYLE: &str = r#"
     }
 "#;
 
+pub type SpectrumUI = Arc<Mutex<Output<Spectrum>>>;
+
 #[derive(Lens)]
 struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
     debug: config::Debug,
-    sample_rate: Arc<AtomicF32>,
-    spectrum: Arc<Mutex<Vec<Complex32>>>,
+    samplerate: Arc<AtomicF32>,
+    spectrum_in: SpectrumUI,
+    spectrum_out: SpectrumUI,
+    // sample_rate: Arc<AtomicF32>,
+    // fft_planner: Arc<dyn RealToComplex<f32>>,
+    // input_buffer: Vec<f32>,
+    // output_buffer: Arc<Mutex<Vec<Complex32>>>,
 }
 
 #[derive(Debug)]
@@ -72,7 +83,7 @@ impl Model for UiData {
 }
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::from_size(PLUGIN_WIDTH as u32, 300)
+    ViziaState::from_size(PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32)
 }
 
 pub(crate) fn create(
@@ -80,7 +91,11 @@ pub(crate) fn create(
     editor_state: Arc<ViziaState>,
     debug: config::Debug,
     sample_rate: Arc<AtomicF32>,
-    spectrum: Arc<Mutex<Vec<Complex32>>>
+    spectrum_in: SpectrumUI,
+    spectrum_out: SpectrumUI,
+    // fft_planner: Arc<dyn RealToComplex<f32>>,
+    // input_buffer: Vec<f32>,
+    // output_buffer: Arc<Mutex<Vec<Complex32>>>
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         // cx.add_stylesheet("src/style.css").expect("could not find css file.");
@@ -90,9 +105,19 @@ pub(crate) fn create(
             gui_context: context.clone(),
             params: params.clone(),
             debug: debug.clone(),
-            noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string(), "violet".to_string()],
-            sample_rate: sample_rate.clone(),
-            spectrum: spectrum.clone(),
+            noise_types: vec![
+                "white".to_string(),
+                "pink".to_string(),
+                "brown".to_string(),
+                "violet".to_string(),
+            ],
+            samplerate: sample_rate.clone(),
+            spectrum_in: spectrum_in.clone(),
+            spectrum_out: spectrum_out.clone(),
+            // sample_rate: sample_rate.clone(),
+            // fft_planner: fft_planner.clone(),
+            // input_buffer: input_buffer.clone(),
+            // output_buffer: output_buffer.clone(),
         }
         .build(cx);
 
@@ -131,6 +156,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
         Label::new(cx, "Gain").bottom(Pixels(-1.0));
         ParamSlider::new(cx, UiData::params, |params| &params.gain).bottom(Pixels(1.0));
         spectrum_analyzer(cx);
+        // analyzer(cx);
         Dropdown::new(
             cx,
             move |cx| {
@@ -197,10 +223,7 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
                         "Current sampling rate",
                         p.sample_rate.load(Ordering::Relaxed),
                     ),
-                    (
-                        "Output buffer len",
-                        p.output_buffer.load(Ordering::Relaxed),
-                    ),
+                    ("Output buffer len", p.output_buffer.load(Ordering::Relaxed)),
                 ];
             }),
             move |cx, lens| {
@@ -233,32 +256,17 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
     .color(Color::rgb(0x69, 0x69, 0x69));
 }
 
-/// This shows a spectrum analyzer for the plugin's output, and also acts as an X-Y pad for the
-/// frequency and resonance parameters.
 fn spectrum_analyzer(cx: &mut Context) {
-    const LABEL_HEIGHT: f32 = 20.0;
-
+    nih_log!("Creating analyzer");
     HStack::new(cx, |cx| {
-        VStack::new(cx, |cx| {
-            // spectrum analyzer goes here
-            // todo!();
-            analyzer::SpectrumAnalyzer::new(
-                cx,
-                UiData::spectrum,
-                UiData::sample_rate,
-            );
-        })
-        .width(Percentage(100.0))
-        .background_color(Color::black())
-        .height(Pixels(100.0));
-
-        Label::new(cx, "Frequency")
-            .font_size(18.0)
-            .top(Pixels(2.0))
-            .width(Stretch(1.0))
-            .height(Pixels(20.0))
-            .child_space(Stretch(1.0));
-        })
-        .space(Pixels(10.0))
-        .width(Stretch(1.0));
+        ZStack::new(cx, |cx| {
+            SpectrumAnalyzer::new(cx, UiData::spectrum_in.get(cx), UiData::samplerate.get(cx))
+                .class("input");
+            SpectrumAnalyzer::new(cx, UiData::spectrum_out.get(cx), UiData::samplerate.get(cx))
+                .class("output");
+        });
+    })
+    .width(Percentage(100.0))
+    .background_color(Color::white())
+    .height(Pixels(100.0));
 }
