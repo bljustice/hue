@@ -34,20 +34,16 @@ pub struct Noise {
     pub brown: Brown,
     pub violet: Violet,
     pub debug: config::Debug,
-    pub samplerate: Arc<AtomicF32>,
+    pub sample_rate: Arc<AtomicF32>,
     pub analyzer_in: Analyzer,
-    pub analyzer_input: editor::SpectrumUI,
-    pub analyzer_out: Analyzer,
     pub analyzer_output: editor::SpectrumUI,
 }
 
 impl Default for Noise {
     fn default() -> Self {
-        let (analyzer_in, spectrum_in) = Analyzer::new(44.1e3, 2, 2048);
-        let analyzer_input = Arc::new(Mutex::new(spectrum_in));
-        let (analyzer_out, spectrum_out) = Analyzer::new(44.1e3, 2, 2048);
+        let (analyzer_in, spectrum_out) = Analyzer::new(44.1e3, 2, 2048);
         let analyzer_output = Arc::new(Mutex::new(spectrum_out));
-        let samplerate = Arc::new(AtomicF32::new(44.1e3));
+        let sample_rate = Arc::new(AtomicF32::new(44.1e3));
 
         Self {
             params: Arc::new(NoiseParams::default()),
@@ -57,10 +53,8 @@ impl Default for Noise {
             brown: Brown::new(0.99),
             violet: Violet::new(),
             debug: config::Debug::default(),
-            samplerate: samplerate,
+            sample_rate: sample_rate,
             analyzer_in: analyzer_in,
-            analyzer_input: analyzer_input,
-            analyzer_out: analyzer_out,
             analyzer_output: analyzer_output,
         }
     }

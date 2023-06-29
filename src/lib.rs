@@ -30,8 +30,8 @@ impl Plugin for noise::Noise {
             self.params.clone(),
             self.params.editor_state.clone(),
             self.debug.clone(),
-            self.samplerate.clone(),
-            self.analyzer_input.clone(),
+            self.sample_rate.clone(),
+            // self.analyzer_input.clone(),
             self.analyzer_output.clone(),
         )
     }
@@ -48,15 +48,10 @@ impl Plugin for noise::Noise {
         _context: &mut impl InitContext,
     ) -> bool {
         let sr = _buffer_config.sample_rate;
-        // self.samplerate.set(sr);
-        self.samplerate.store(sr, Ordering::Relaxed);
-        self.analyzer_in.set_samplerate(sr);
-        self.analyzer_out.set_samplerate(sr);
-        // self.analyzer_in
-        //     .set_decay(self.params.analyzer_smooth.value());
-        // self.analyzer_out
-        //     .set_decay(self.params.analyzer_smooth.value());
-        // self.set_filterbank_samplerate(sr);
+        self.sample_rate.store(sr, Ordering::Relaxed);
+        self.analyzer_in.set_sample_rate(sr);
+        // self.analyzer_out.set_sample_rate(sr);
+
         true
     }
 
@@ -87,12 +82,6 @@ impl Plugin for noise::Noise {
 
             let final_sample = noise_sample * gain;
             for sample in channel_samples {
-                // if self.spectrum.input_buffer.len() < 2048 {
-                //     self.spectrum.input_buffer.push(final_sample);
-                // } else {
-                //     self.spectrum.input_buffer.clear();
-                // }
-
                 *sample = final_sample;
                 // this is useful for debugging the noise algorithm difference equations
                 if cfg!(debug_assertions) {
@@ -101,10 +90,8 @@ impl Plugin for noise::Noise {
                         .store(final_sample, Ordering::Relaxed);
                     self.debug
                         .sample_rate
-                        .store(self.samplerate.load(Ordering::Relaxed), Ordering::Relaxed);
-                    // self.debug
-                    //     .output_buffer
-                    //     .store(&buffer.iter_samples().len() as f32, Ordering::Relaxed);
+                        .store(self.sample_rate.load(Ordering::Relaxed), Ordering::Relaxed);
+
                     if final_sample > self.debug.max_sample_val.load(Ordering::Relaxed) {
                         self.debug
                             .max_sample_val
@@ -119,7 +106,7 @@ impl Plugin for noise::Noise {
         }
         if self.params.editor_state.is_open() {
             self.analyzer_in.process_buffer(buffer);
-            self.analyzer_out.process_buffer(buffer);
+            // self.analyzer_out.process_buffer(buffer);
         }
         ProcessStatus::Normal
     }

@@ -4,75 +4,38 @@ use nih_plug::{
     util::{window::multiply_with_window, StftHelper},
 };
 use realfft::{num_complex::Complex32, num_traits::Zero, RealFftPlanner, RealToComplex};
-use std::{
-    fmt::{self, Formatter},
-    sync::{atomic::Ordering::Relaxed, Arc},
-};
+use std::sync::{atomic::Ordering::Relaxed, Arc};
 use triple_buffer::{Input, Output, TripleBuffer};
-
-pub struct Spectrum {
-    pub window_size: usize,
-    pub samplerate: f32,
-    pub data: Box<[f32]>,
-}
-
-impl Clone for Spectrum {
-    fn clone(&self) -> Self {
-        let mut this = Self::new(self.window_size, self.samplerate);
-        this.data.copy_from_slice(&self.data);
-        this
-    }
-
-    fn clone_from(&mut self, source: &Self) {
-        self.window_size = source.window_size;
-        self.samplerate = source.samplerate;
-        self.data.copy_from_slice(&source.data);
-    }
-}
-
-impl Spectrum {
-    fn new(window_size: usize, samplerate: f32) -> Spectrum {
-        Self {
-            window_size,
-            samplerate,
-            data: vec![0.; window_size / 2 + 1].into_boxed_slice(),
-        }
-    }
-}
-
-impl fmt::Debug for Spectrum {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Spectrum")
-            .field("window_size", &self.window_size)
-            .finish_non_exhaustive()
-    }
-}
 
 pub struct Analyzer {
     stft: StftHelper,
-    input: Input<Spectrum>,
-    scratch: Spectrum,
-    samplerate: Arc<AtomicF32>,
+    input: Input<Vec<f32>>,
+    scratch: Vec<f32>,
+    sample_rate: Arc<AtomicF32>,
     plan: Arc<dyn RealToComplex<f32>>,
-    fft_buffer: Vec<Complex32>,
+    output_buffer: Vec<Complex32>,
     window: Vec<f32>,
 }
 
 impl Analyzer {
     pub fn new(
-        samplerate: f32,
+        sample_rate: f32,
         num_channels: usize,
         window_size: usize,
-    ) -> (Self, Output<Spectrum>) {
-        let scratch = Spectrum::new(window_size, samplerate);
+    ) -> (Self, Output<Vec<f32>>) {
+        let planner = RealFftPlanner::new().plan_fft_forward(window_size);
+        let output_buffer = planner.make_output_vec();
+        let scratch = vec![0.; window_size / 2 + 1];
+
         let (input, output) = TripleBuffer::new(&scratch).split();
+
         let this = Self {
             stft: StftHelper::new(num_channels, window_size, 0),
             input,
             scratch,
-            samplerate: Arc::new(AtomicF32::new(samplerate)),
-            plan: RealFftPlanner::new().plan_fft_forward(window_size),
-            fft_buffer: vec![Complex32::zero(); window_size / 2 + 1],
+            sample_rate: Arc::new(AtomicF32::new(sample_rate)),
+            plan: planner,
+            output_buffer: output_buffer,
             window: util::window::hann(window_size)
                 .into_iter()
                 .map(|x| x / window_size as f32)
@@ -81,29 +44,24 @@ impl Analyzer {
         (this, output)
     }
 
-    pub fn set_samplerate(&self, samplerate: f32) {
-        self.samplerate.store(samplerate, Relaxed);
+    pub fn set_sample_rate(&self, sample_rate: f32) {
+        self.sample_rate.store(sample_rate, Relaxed);
     }
 
     pub fn process_buffer(&mut self, buffer: &Buffer) {
-        self.scratch.samplerate = self.samplerate.load(Relaxed);
         self.stft.process_analyze_only(buffer, 2, |_, buffer| {
             multiply_with_window(buffer, &self.window);
-            if self
-                .plan
-                .process_with_scratch(buffer, &mut self.fft_buffer, &mut [])
-                .is_err()
-            {
-                self.fft_buffer.fill(Complex32::zero());
+            if self.plan.process(buffer, &mut self.output_buffer).is_err() {
+                self.output_buffer.fill(Complex32::zero());
             }
+
             for (scratch, fft) in self
                 .scratch
-                .data
                 .iter_mut()
-                .zip(self.fft_buffer.iter_mut().map(|c| c.norm()))
+                .zip(self.output_buffer.iter_mut().map(|c| c.norm()))
             {
                 let decay = f32::ln(1e-3);
-                let mix = f32::exp(decay * 1024. / self.scratch.samplerate);
+                let mix = f32::exp(decay * 1024. / self.sample_rate.load(Relaxed));
                 *scratch = lerp(mix, fft, *scratch).max(fft);
             }
         });

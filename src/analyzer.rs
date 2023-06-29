@@ -7,7 +7,7 @@ use crate::editor::SpectrumUI;
 
 fn filter_frequency_range() -> FloatRange {
     FloatRange::Skewed {
-        min: 5.0, // This must never reach 0
+        min: 5.0,
         max: 20_000.0,
         factor: FloatRange::skew_factor(-2.5),
     }
@@ -40,13 +40,13 @@ impl SpectrumAnalyzer {
         let mut spectrum = self.spectrum.lock().unwrap();
         let spectrum = spectrum.read();
         let nyquist = self.samplerate.load(Ordering::Relaxed) / 2.0;
-        for (i, y) in spectrum.data.iter().copied().enumerate() {
+            for (i, y) in spectrum.iter().copied().enumerate() {
             if i == 0 {
                 path.move_to(bounds.x - 100., bounds.y + bounds.h);
                 continue;
             }
 
-            let freq_norm = i as f32 / spectrum.data.len() as f32;
+            let freq_norm = i as f32 / spectrum.len() as f32;
             let frequency = freq_norm * nyquist;
             let x = self.frange.normalize(frequency);
             let slope = 3.;

@@ -6,14 +6,12 @@ use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
-use realfft::{num_complex::Complex32, RealToComplex};
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use triple_buffer::Output;
 
 use crate::analyzer::SpectrumAnalyzer;
 use crate::config;
 use crate::noise;
-use crate::spectrum::Spectrum;
 
 /// VIZIA uses points instead of pixels for text
 const PLUGIN_WIDTH: f32 = 400.0;
@@ -33,7 +31,7 @@ const STYLE: &str = r#"
     }
 "#;
 
-pub type SpectrumUI = Arc<Mutex<Output<Spectrum>>>;
+pub type SpectrumUI = Arc<Mutex<Output<Vec<f32>>>>;
 
 #[derive(Lens)]
 struct UiData {
@@ -43,11 +41,6 @@ struct UiData {
     debug: config::Debug,
     samplerate: Arc<AtomicF32>,
     spectrum_in: SpectrumUI,
-    spectrum_out: SpectrumUI,
-    // sample_rate: Arc<AtomicF32>,
-    // fft_planner: Arc<dyn RealToComplex<f32>>,
-    // input_buffer: Vec<f32>,
-    // output_buffer: Arc<Mutex<Vec<Complex32>>>,
 }
 
 #[derive(Debug)]
@@ -92,10 +85,6 @@ pub(crate) fn create(
     debug: config::Debug,
     sample_rate: Arc<AtomicF32>,
     spectrum_in: SpectrumUI,
-    spectrum_out: SpectrumUI,
-    // fft_planner: Arc<dyn RealToComplex<f32>>,
-    // input_buffer: Vec<f32>,
-    // output_buffer: Arc<Mutex<Vec<Complex32>>>
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         // cx.add_stylesheet("src/style.css").expect("could not find css file.");
@@ -113,11 +102,6 @@ pub(crate) fn create(
             ],
             samplerate: sample_rate.clone(),
             spectrum_in: spectrum_in.clone(),
-            spectrum_out: spectrum_out.clone(),
-            // sample_rate: sample_rate.clone(),
-            // fft_planner: fft_planner.clone(),
-            // input_buffer: input_buffer.clone(),
-            // output_buffer: output_buffer.clone(),
         }
         .build(cx);
 
@@ -262,8 +246,6 @@ fn spectrum_analyzer(cx: &mut Context) {
         ZStack::new(cx, |cx| {
             SpectrumAnalyzer::new(cx, UiData::spectrum_in.get(cx), UiData::samplerate.get(cx))
                 .class("input");
-            SpectrumAnalyzer::new(cx, UiData::spectrum_out.get(cx), UiData::samplerate.get(cx))
-                .class("output");
         });
     })
     .width(Percentage(100.0))
