@@ -43,16 +43,15 @@ impl SpectrumAnalyzer {
             .iter()
             .map(|c| c.norm()).collect();
 
-        let nyquist = self.samplerate.load(Ordering::Relaxed) / 2.0;
+        let sr = self.samplerate.load(Ordering::Relaxed);
 
         for (bin_index, amplitude) in amplitude_spectrum.iter().copied().enumerate() {
             if bin_index == 0 {
                 path.move_to(bounds.x - 100., bounds.y + bounds.h);
                 continue;
             }
-
-            let freq_norm = bin_index as f32 / amplitude_spectrum.len() as f32;
-            let frequency = freq_norm * nyquist;
+            
+            let frequency = bin_index as f32 * sr / amplitude_spectrum.len() as f32;
             let x = self.frange.normalize(frequency);
 
             // this changes the height of the visualized spectrum
