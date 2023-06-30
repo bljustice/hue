@@ -8,6 +8,7 @@ use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use triple_buffer::Output;
+use realfft::num_complex::Complex;
 
 use crate::analyzer::SpectrumAnalyzer;
 use crate::config;
@@ -31,7 +32,8 @@ const STYLE: &str = r#"
     }
 "#;
 
-pub type SpectrumUI = Arc<Mutex<Output<Vec<f32>>>>;
+// pub type SpectrumUI = Arc<Mutex<Output<Vec<f32>>>>;
+pub type SpectrumUI = Arc<Mutex<Output<Vec<Complex<f32>>>>>;
 
 #[derive(Lens)]
 struct UiData {
@@ -88,7 +90,7 @@ pub(crate) fn create(
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         // cx.add_stylesheet("src/style.css").expect("could not find css file.");
-        cx.add_theme(STYLE);
+        // cx.add_theme(STYLE);
 
         UiData {
             gui_context: context.clone(),
@@ -104,7 +106,6 @@ pub(crate) fn create(
             spectrum_in: spectrum_in.clone(),
         }
         .build(cx);
-
         ResizeHandle::new(cx);
         Binding::new(
             cx,
@@ -112,8 +113,8 @@ pub(crate) fn create(
             move |cx, lens| {
                 let noise_color = lens.get(cx);
                 build_gui(cx).background_color(change_plugin_color(&noise_color));
-            },
-        )
+            }
+        );
     })
 }
 
@@ -140,7 +141,6 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
         Label::new(cx, "Gain").bottom(Pixels(-1.0));
         ParamSlider::new(cx, UiData::params, |params| &params.gain).bottom(Pixels(1.0));
         spectrum_analyzer(cx);
-        // analyzer(cx);
         Dropdown::new(
             cx,
             move |cx| {

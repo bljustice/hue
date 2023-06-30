@@ -38,21 +38,25 @@ impl SpectrumAnalyzer {
         let mut path = vg::Path::new();
 
         let mut spectrum = self.spectrum.lock().unwrap();
-        let spectrum = spectrum.read();
+        let amplitude_spectrum: Vec<f32> = spectrum
+            .read()
+            .iter()
+            .map(|c| c.norm()).collect();
+
         let nyquist = self.samplerate.load(Ordering::Relaxed) / 2.0;
-            for (i, y) in spectrum.iter().copied().enumerate() {
-            if i == 0 {
+
+        for (bin_index, amplitude) in amplitude_spectrum.iter().copied().enumerate() {
+            if bin_index == 0 {
                 path.move_to(bounds.x - 100., bounds.y + bounds.h);
                 continue;
             }
 
-            let freq_norm = i as f32 / spectrum.len() as f32;
+            let freq_norm = bin_index as f32 / amplitude_spectrum.len() as f32;
             let frequency = freq_norm * nyquist;
             let x = self.frange.normalize(frequency);
-            let slope = 3.;
-            let octavediff = frequency.log2() - 1000f32.log2();
-            let octavegain = slope * octavediff;
-            let h = (octavegain + util::gain_to_db(y) + 80.) / 80.;
+
+            // this changes the height of the visualized spectrum
+            let h = (util::gain_to_db(amplitude) + 100.) / 120.;
 
             path.line_to(bounds.x + bounds.w * x, bounds.y + bounds.h * (1. - h));
         }
