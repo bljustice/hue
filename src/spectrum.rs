@@ -7,7 +7,7 @@ use realfft::{num_complex::{Complex32, Complex}, num_traits::Zero, RealFftPlanne
 use std::sync::{atomic::Ordering::Relaxed, Arc};
 use triple_buffer::{Input, Output, TripleBuffer};
 
-pub struct Analyzer {
+pub struct Spectrum {
     stft: StftHelper,
     input: Input<Vec<Complex<f32>>>,
     sample_rate: Arc<AtomicF32>,
@@ -16,7 +16,7 @@ pub struct Analyzer {
     window: Vec<f32>,
 }
 
-impl Analyzer {
+impl Spectrum {
     pub fn new(
         sample_rate: f32,
         num_channels: usize,
@@ -32,7 +32,7 @@ impl Analyzer {
             input,
             sample_rate: Arc::new(AtomicF32::new(sample_rate)),
             plan: planner,
-            output_buffer: output_buffer,
+            output_buffer,
             window: util::window::hann(window_size)
                 .into_iter()
                 .map(|x| x / window_size as f32)

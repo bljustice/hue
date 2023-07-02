@@ -31,8 +31,7 @@ impl Plugin for noise::Noise {
             self.params.editor_state.clone(),
             self.debug.clone(),
             self.sample_rate.clone(),
-            // self.analyzer_input.clone(),
-            self.analyzer_output.clone(),
+            self.spectrum_output_buffer.clone(),
         )
     }
 
@@ -49,8 +48,7 @@ impl Plugin for noise::Noise {
     ) -> bool {
         let sr = _buffer_config.sample_rate;
         self.sample_rate.store(sr, Ordering::Relaxed);
-        self.analyzer_in.set_sample_rate(sr);
-        // self.analyzer_out.set_sample_rate(sr);
+        self.spectrum.set_sample_rate(sr);
 
         true
     }
@@ -105,8 +103,8 @@ impl Plugin for noise::Noise {
             }
         }
         if self.params.editor_state.is_open() {
-            self.analyzer_in.process_buffer(buffer);
-            // self.analyzer_out.process_buffer(buffer);
+            self.spectrum.process_buffer(buffer);
+
         }
         ProcessStatus::Normal
     }

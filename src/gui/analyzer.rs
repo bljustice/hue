@@ -1,9 +1,13 @@
-use std::sync::{atomic::Ordering, Arc};
+use std::sync::{atomic::Ordering, Arc, Mutex};
 use atomic_float::AtomicF32;
+use triple_buffer::Output;
+use realfft::num_complex::Complex;
 use nih_plug::prelude::*;
 use nih_plug_vizia::vizia::{cache::BoundingBox, prelude::*, vg};
 
-use crate::editor::SpectrumUI;
+// use crate::editor::SpectrumBuffer;
+
+pub type SpectrumBuffer = Arc<Mutex<Output<Vec<Complex<f32>>>>>;
 
 fn filter_frequency_range() -> FloatRange {
     FloatRange::Skewed {
@@ -14,17 +18,17 @@ fn filter_frequency_range() -> FloatRange {
 }
 
 pub struct SpectrumAnalyzer {
-    spectrum: SpectrumUI,
+    spectrum: SpectrumBuffer,
     sample_rate: Arc<AtomicF32>,
-    freq_range: FloatRange,
+    frequency_range: FloatRange,
 }
 
 impl SpectrumAnalyzer {
-    pub fn new(cx: &mut Context, spectrum: SpectrumUI, sample_rate: Arc<AtomicF32>) -> Handle<Self> {
+    pub fn new(cx: &mut Context, spectrum: SpectrumBuffer, sample_rate: Arc<AtomicF32>) -> Handle<Self> {
         Self {
             spectrum,
             sample_rate,
-            freq_range: filter_frequency_range(),
+            frequency_range: filter_frequency_range(),
         }
         .build(cx, |_cx| ())
     }
@@ -45,17 +49,17 @@ impl SpectrumAnalyzer {
 
         let sr = self.sample_rate.load(Ordering::Relaxed);
 
-        for (bin_index, amplitude) in amplitude_spectrum.iter().copied().enumerate() {
+        for (bin_index, amplitude) in amplitude_spectrum.iter().enumerate() {
             if bin_index == 0 {
                 path.move_to(bounds.x - 100., bounds.y + bounds.h);
                 continue;
             }
             
             let frequency = bin_index as f32 * sr / amplitude_spectrum.len() as f32;
-            let x = self.freq_range.normalize(frequency);
+            let x = self.frequency_range.normalize(frequency);
 
             // this changes the height of the visualized spectrum
-            let h = (util::gain_to_db(amplitude) + 100.) / 120.;
+            let h = (util::gain_to_db(*amplitude) + 100.) / 120.;
 
             path.line_to(bounds.x + bounds.w * x, bounds.y + bounds.h * (1. - h));
         }
@@ -66,7 +70,7 @@ impl SpectrumAnalyzer {
 
 impl View for SpectrumAnalyzer {
     fn element(&self) -> Option<&'static str> {
-        Some("spectrum")
+        Some("spectrum-analyzer")
     }
 
     fn draw(&self, cx: &mut DrawContext, canvas: &mut Canvas) {

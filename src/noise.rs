@@ -10,7 +10,8 @@ use std::{
 
 use crate::config;
 use crate::editor;
-use crate::spectrum::Analyzer;
+use crate::gui;
+use crate::spectrum::Spectrum;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
@@ -35,14 +36,14 @@ pub struct Noise {
     pub violet: Violet,
     pub debug: config::Debug,
     pub sample_rate: Arc<AtomicF32>,
-    pub analyzer_in: Analyzer,
-    pub analyzer_output: editor::SpectrumUI,
+    pub spectrum: Spectrum,
+    pub spectrum_output_buffer: gui::analyzer::SpectrumBuffer,
 }
 
 impl Default for Noise {
     fn default() -> Self {
-        let (analyzer_in, spectrum_out) = Analyzer::new(44.1e3, 2, 2048);
-        let analyzer_output = Arc::new(Mutex::new(spectrum_out));
+        let (spectrum, spectrum_out) = Spectrum::new(44.1e3, 2, 2048);
+        let spectrum_output_buffer = Arc::new(Mutex::new(spectrum_out));
         let sample_rate = Arc::new(AtomicF32::new(44.1e3));
 
         Self {
@@ -53,9 +54,9 @@ impl Default for Noise {
             brown: Brown::new(0.99),
             violet: Violet::new(),
             debug: config::Debug::default(),
-            sample_rate: sample_rate,
-            analyzer_in: analyzer_in,
-            analyzer_output: analyzer_output,
+            sample_rate,
+            spectrum,
+            spectrum_output_buffer,
         }
     }
 }

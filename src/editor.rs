@@ -5,11 +5,9 @@ use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
-use std::sync::{atomic::Ordering, Arc, Mutex};
-use triple_buffer::Output;
-use realfft::num_complex::Complex;
+use std::sync::{atomic::Ordering, Arc};
 
-use crate::gui::analyzer::SpectrumAnalyzer;
+use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::config;
 use crate::noise;
 
@@ -18,16 +16,14 @@ const PLUGIN_HEIGHT: f32 = 600.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{e75c}";
 
-pub type SpectrumUI = Arc<Mutex<Output<Vec<Complex<f32>>>>>;
-
 #[derive(Lens)]
 struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
     debug: config::Debug,
-    samplerate: Arc<AtomicF32>,
-    spectrum_in: SpectrumUI,
+    sample_rate: Arc<AtomicF32>,
+    spectrum_buffer: SpectrumBuffer,
 }
 
 #[derive(Debug)]
@@ -71,7 +67,7 @@ pub(crate) fn create(
     editor_state: Arc<ViziaState>,
     debug: config::Debug,
     sample_rate: Arc<AtomicF32>,
-    spectrum_in: SpectrumUI,
+    spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
         // cx.add_stylesheet("src/style.css").expect("could not find css file.");
@@ -87,8 +83,8 @@ pub(crate) fn create(
                 "brown".to_string(),
                 "violet".to_string(),
             ],
-            samplerate: sample_rate.clone(),
-            spectrum_in: spectrum_in.clone(),
+            sample_rate: sample_rate.clone(),
+            spectrum_buffer: spectrum_buffer.clone(),
         }
         .build(cx);
         ResizeHandle::new(cx);
@@ -140,8 +136,8 @@ fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
         ZStack::new(cx, |cx| {
             SpectrumAnalyzer::new(
                 cx,
-                UiData::spectrum_in.get(cx),
-                UiData::samplerate.get(cx)
+                UiData::spectrum_buffer.get(cx),
+                UiData::sample_rate.get(cx)
             );
         });
     })
