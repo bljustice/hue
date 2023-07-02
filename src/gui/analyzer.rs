@@ -15,16 +15,16 @@ fn filter_frequency_range() -> FloatRange {
 
 pub struct SpectrumAnalyzer {
     spectrum: SpectrumUI,
-    samplerate: Arc<AtomicF32>,
-    frange: FloatRange,
+    sample_rate: Arc<AtomicF32>,
+    freq_range: FloatRange,
 }
 
 impl SpectrumAnalyzer {
-    pub fn new(cx: &mut Context, spectrum: SpectrumUI, samplerate: Arc<AtomicF32>) -> Handle<Self> {
+    pub fn new(cx: &mut Context, spectrum: SpectrumUI, sample_rate: Arc<AtomicF32>) -> Handle<Self> {
         Self {
             spectrum,
-            samplerate,
-            frange: filter_frequency_range(),
+            sample_rate,
+            freq_range: filter_frequency_range(),
         }
         .build(cx, |_cx| ())
     }
@@ -43,7 +43,7 @@ impl SpectrumAnalyzer {
             .iter()
             .map(|c| c.norm()).collect();
 
-        let sr = self.samplerate.load(Ordering::Relaxed);
+        let sr = self.sample_rate.load(Ordering::Relaxed);
 
         for (bin_index, amplitude) in amplitude_spectrum.iter().copied().enumerate() {
             if bin_index == 0 {
@@ -52,7 +52,7 @@ impl SpectrumAnalyzer {
             }
             
             let frequency = bin_index as f32 * sr / amplitude_spectrum.len() as f32;
-            let x = self.frange.normalize(frequency);
+            let x = self.freq_range.normalize(frequency);
 
             // this changes the height of the visualized spectrum
             let h = (util::gain_to_db(amplitude) + 100.) / 120.;
