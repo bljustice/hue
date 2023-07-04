@@ -11,8 +11,9 @@ use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::config;
 use crate::noise;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PLUGIN_WIDTH: f32 = 400.0;
-const PLUGIN_HEIGHT: f32 = 400.0;
+const PLUGIN_HEIGHT: f32 = 450.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{e75c}";
 
@@ -109,15 +110,21 @@ fn change_plugin_color(noise_color: &str) -> Color {
     return plugin_color;
 }
 
-fn create_title_block(cx: &mut Context) -> Handle<HStack> {
-    HStack::new(cx, |cx| {
+fn create_title_block(cx: &mut Context) -> Handle<VStack> {
+
+    let version_str = format!("v{}", VERSION);
+    VStack::new(cx, |cx| {
         Label::new(cx, "noisegen")
             .font(assets::NOTO_SANS_THIN)
-            .font_size(40.0 * POINT_SCALE)
-            .height(Percentage(100.0));
+            .font_size(40.0 * POINT_SCALE);
+            // .height(Percentage(100.0));
+        Label::new(cx, &version_str)
+            .font_size(15.0 * POINT_SCALE);
+            // .height(Percentage(100.0));
     })
     .top(Percentage(1.0))
-    .height(Percentage(10.0))
+    .height(Percentage(20.0))
+    .child_space(Stretch(1.0))
 }
 
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
