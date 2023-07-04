@@ -3,7 +3,11 @@ use nih_plug::{
     prelude::*,
     util::{window::multiply_with_window, StftHelper},
 };
-use realfft::{num_complex::{Complex32, Complex}, num_traits::Zero, RealFftPlanner, RealToComplex};
+use realfft::{
+    num_complex::{Complex, Complex32},
+    num_traits::Zero,
+    RealFftPlanner, RealToComplex,
+};
 use std::sync::{atomic::Ordering::Relaxed, Arc};
 use triple_buffer::{Input, Output, TripleBuffer};
 
@@ -47,7 +51,6 @@ impl Spectrum {
 
     pub fn process_buffer(&mut self, buffer: &Buffer) {
         self.stft.process_analyze_only(buffer, 2, |_, buffer| {
-
             multiply_with_window(buffer, &self.window);
 
             let fft_response = self.plan.process(buffer, &mut self.output_buffer);
