@@ -2,9 +2,9 @@ use nih_plug::prelude::*;
 use noise::NoiseConfig;
 use std::sync::{atomic::Ordering, Arc};
 
-mod gui;
 mod config;
 mod editor;
+mod gui;
 mod noise;
 mod spectrum;
 
@@ -104,7 +104,6 @@ impl Plugin for noise::Noise {
         }
         if self.params.editor_state.is_open() {
             self.spectrum.process_buffer(buffer);
-
         }
         ProcessStatus::Normal
     }

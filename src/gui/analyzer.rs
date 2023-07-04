@@ -1,9 +1,9 @@
-use std::sync::{atomic::Ordering, Arc, Mutex};
 use atomic_float::AtomicF32;
-use triple_buffer::Output;
-use realfft::num_complex::Complex;
 use nih_plug::prelude::*;
 use nih_plug_vizia::vizia::{cache::BoundingBox, prelude::*, vg};
+use realfft::num_complex::Complex;
+use std::sync::{atomic::Ordering, Arc, Mutex};
+use triple_buffer::Output;
 
 // use crate::editor::SpectrumBuffer;
 
@@ -24,7 +24,11 @@ pub struct SpectrumAnalyzer {
 }
 
 impl SpectrumAnalyzer {
-    pub fn new(cx: &mut Context, spectrum: SpectrumBuffer, sample_rate: Arc<AtomicF32>) -> Handle<Self> {
+    pub fn new(
+        cx: &mut Context,
+        spectrum: SpectrumBuffer,
+        sample_rate: Arc<AtomicF32>,
+    ) -> Handle<Self> {
         Self {
             spectrum,
             sample_rate,
@@ -42,10 +46,7 @@ impl SpectrumAnalyzer {
         let mut path = vg::Path::new();
 
         let mut spectrum = self.spectrum.lock().unwrap();
-        let amplitude_spectrum: Vec<f32> = spectrum
-            .read()
-            .iter()
-            .map(|c| c.norm()).collect();
+        let amplitude_spectrum: Vec<f32> = spectrum.read().iter().map(|c| c.norm()).collect();
 
         let sr = self.sample_rate.load(Ordering::Relaxed);
 
@@ -54,7 +55,7 @@ impl SpectrumAnalyzer {
                 path.move_to(bounds.x - 100., bounds.y + bounds.h);
                 continue;
             }
-            
+
             let frequency = bin_index as f32 * sr / amplitude_spectrum.len() as f32;
             let x = self.frequency_range.normalize(frequency);
 

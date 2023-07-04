@@ -7,8 +7,8 @@ use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
 use std::sync::{atomic::Ordering, Arc};
 
-use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::config;
+use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::noise;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -71,7 +71,6 @@ pub(crate) fn create(
     spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
-
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
@@ -93,7 +92,7 @@ pub(crate) fn create(
             move |cx, lens| {
                 let noise_color = lens.get(cx);
                 build_gui(cx).background_color(change_plugin_color(&noise_color));
-            }
+            },
         );
     })
 }
@@ -111,16 +110,12 @@ fn change_plugin_color(noise_color: &str) -> Color {
 }
 
 fn create_title_block(cx: &mut Context) -> Handle<VStack> {
-
     let version_str = format!("v{}", VERSION);
     VStack::new(cx, |cx| {
         Label::new(cx, "noisegen")
             .font(assets::NOTO_SANS_THIN)
             .font_size(40.0 * POINT_SCALE);
-            // .height(Percentage(100.0));
-        Label::new(cx, &version_str)
-            .font_size(15.0 * POINT_SCALE);
-            // .height(Percentage(100.0));
+        Label::new(cx, &version_str).font_size(15.0 * POINT_SCALE);
     })
     .top(Percentage(1.0))
     .height(Percentage(20.0))
@@ -129,8 +124,7 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
 
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "Gain")
-            .left(Percentage(40.0));
+        Label::new(cx, "Gain").left(Percentage(40.0));
         ParamSlider::new(cx, UiData::params, |params| &params.gain);
     })
     .height(Percentage(10.0))
@@ -142,7 +136,7 @@ fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
             SpectrumAnalyzer::new(
                 cx,
                 UiData::spectrum_buffer.get(cx),
-                UiData::sample_rate.get(cx)
+                UiData::sample_rate.get(cx),
             );
         });
     })
