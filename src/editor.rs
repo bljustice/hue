@@ -12,7 +12,7 @@ use crate::config;
 use crate::noise;
 
 const PLUGIN_WIDTH: f32 = 400.0;
-const PLUGIN_HEIGHT: f32 = 600.0;
+const PLUGIN_HEIGHT: f32 = 400.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{e75c}";
 
@@ -70,8 +70,6 @@ pub(crate) fn create(
     spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
-        // cx.add_stylesheet("src/style.css").expect("could not find css file.");
-        // cx.add_theme(STYLE);
 
         UiData {
             gui_context: context.clone(),
