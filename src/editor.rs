@@ -1,3 +1,4 @@
+use atomic_float::AtomicF32;
 use nih_plug::context::{GuiContext, ParamSetter};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
@@ -6,15 +7,14 @@ use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
 use std::sync::{atomic::Ordering, Arc};
 
+use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::config;
 use crate::noise;
 
-/// VIZIA uses points instead of pixels for text
 const PLUGIN_WIDTH: f32 = 400.0;
+const PLUGIN_HEIGHT: f32 = 400.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{e75c}";
-
-const STYLE: &str = r#""#;
 
 #[derive(Lens)]
 struct UiData {
@@ -22,6 +22,8 @@ struct UiData {
     params: Arc<noise::NoiseParams>,
     noise_types: Vec<String>,
     debug: config::Debug,
+    sample_rate: Arc<AtomicF32>,
+    spectrum_buffer: SpectrumBuffer,
 }
 
 #[derive(Debug)]
@@ -57,25 +59,32 @@ impl Model for UiData {
 }
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::from_size(PLUGIN_WIDTH as u32, 300)
+    ViziaState::from_size(PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32)
 }
 
 pub(crate) fn create(
     params: Arc<noise::NoiseParams>,
     editor_state: Arc<ViziaState>,
     debug: config::Debug,
+    sample_rate: Arc<AtomicF32>,
+    spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, move |cx, context| {
-        cx.add_theme(STYLE);
 
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
             debug: debug.clone(),
-            noise_types: vec!["white".to_string(), "pink".to_string(), "brown".to_string(), "violet".to_string()],
+            noise_types: vec![
+                "white".to_string(),
+                "pink".to_string(),
+                "brown".to_string(),
+                "violet".to_string(),
+            ],
+            sample_rate: sample_rate.clone(),
+            spectrum_buffer: spectrum_buffer.clone(),
         }
         .build(cx);
-
         ResizeHandle::new(cx);
         Binding::new(
             cx,
@@ -83,8 +92,8 @@ pub(crate) fn create(
             move |cx, lens| {
                 let noise_color = lens.get(cx);
                 build_gui(cx).background_color(change_plugin_color(&noise_color));
-            },
-        )
+            }
+        );
     })
 }
 
@@ -100,16 +109,42 @@ fn change_plugin_color(noise_color: &str) -> Color {
     return plugin_color;
 }
 
-fn build_gui(cx: &mut Context) -> Handle<VStack> {
-    return VStack::new(cx, |cx| {
+fn create_title_block(cx: &mut Context) -> Handle<HStack> {
+    HStack::new(cx, |cx| {
         Label::new(cx, "noisegen")
             .font(assets::NOTO_SANS_THIN)
             .font_size(40.0 * POINT_SCALE)
-            .height(Pixels(50.0))
-            .child_top(Stretch(1.0))
-            .child_bottom(Pixels(0.0));
-        Label::new(cx, "Gain").bottom(Pixels(-1.0));
-        ParamSlider::new(cx, UiData::params, |params| &params.gain).bottom(Pixels(1.0));
+            .height(Percentage(100.0));
+    })
+    .top(Percentage(1.0))
+    .height(Percentage(10.0))
+}
+
+fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
+        Label::new(cx, "Gain")
+            .left(Percentage(40.0));
+        ParamSlider::new(cx, UiData::params, |params| &params.gain);
+    })
+    .height(Percentage(10.0))
+}
+
+fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
+    HStack::new(cx, |cx| {
+        ZStack::new(cx, |cx| {
+            SpectrumAnalyzer::new(
+                cx,
+                UiData::spectrum_buffer.get(cx),
+                UiData::sample_rate.get(cx)
+            );
+        });
+    })
+    .width(Percentage(100.0))
+    .height(Percentage(10.0))
+}
+
+fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
         Dropdown::new(
             cx,
             move |cx| {
@@ -118,6 +153,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                     Label::new(cx, ICON_DOWN_OPEN).class("arrow");
                 })
                 .class("title")
+                .child_space(Stretch(1.0))
             },
             move |cx| {
                 // List of options
@@ -129,7 +165,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                             move |cx, choice| {
                                 let selected = *item.get(cx) == *choice.get(cx);
                                 Label::new(cx, &item.get(cx))
-                                    .width(Stretch(1.0))
+                                    .width(Percentage(100.0))
                                     .background_color(if selected {
                                         Color::from("#c28919")
                                     } else {
@@ -144,18 +180,32 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                     });
                 });
             },
-        );
+        )
+        .child_space(Stretch(1.0))
+        .width(Percentage(100.0));
+    })
+    .height(Percentage(10.0))
+    .top(Percentage(5.0))
+    .width(Percentage(100.0))
+}
+
+fn build_gui(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
+        create_title_block(cx);
+        create_gain_block(cx);
+        create_spectrum_analyzer(cx);
+        create_noise_selector(cx);
         if cfg!(debug_assertions) {
             build_debug_window(cx);
         }
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))
-    .child_right(Stretch(1.0));
+    .child_right(Stretch(1.0))
 }
 
 fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
-    return VStack::new(cx, move |cx| {
+    VStack::new(cx, move |cx| {
         Binding::new(
             cx,
             UiData::debug.map(|p| {
@@ -172,6 +222,11 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
                         "Max sample value seen",
                         p.max_sample_val.load(Ordering::Relaxed),
                     ),
+                    (
+                        "Current sampling rate",
+                        p.sample_rate.load(Ordering::Relaxed),
+                    ),
+                    ("Output buffer len", p.output_buffer.load(Ordering::Relaxed)),
                 ];
             }),
             move |cx, lens| {
@@ -201,5 +256,5 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
     .height(Pixels(10.0))
     .top(Pixels(50.0))
     .background_color(Color::rgb(255, 255, 255))
-    .color(Color::rgb(0x69, 0x69, 0x69));
+    .color(Color::rgb(0x69, 0x69, 0x69))
 }

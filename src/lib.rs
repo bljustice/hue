@@ -2,9 +2,11 @@ use nih_plug::prelude::*;
 use noise::NoiseConfig;
 use std::sync::{atomic::Ordering, Arc};
 
+mod gui;
 mod config;
 mod editor;
 mod noise;
+mod spectrum;
 
 impl Plugin for noise::Noise {
     const NAME: &'static str = "noisegen";
@@ -28,6 +30,8 @@ impl Plugin for noise::Noise {
             self.params.clone(),
             self.params.editor_state.clone(),
             self.debug.clone(),
+            self.sample_rate.clone(),
+            self.spectrum_output_buffer.clone(),
         )
     }
 
@@ -42,6 +46,10 @@ impl Plugin for noise::Noise {
         _buffer_config: &BufferConfig,
         _context: &mut impl InitContext,
     ) -> bool {
+        let sr = _buffer_config.sample_rate;
+        self.sample_rate.store(sr, Ordering::Relaxed);
+        self.spectrum.set_sample_rate(sr);
+
         true
     }
 
@@ -78,6 +86,10 @@ impl Plugin for noise::Noise {
                     self.debug
                         .current_sample_val
                         .store(final_sample, Ordering::Relaxed);
+                    self.debug
+                        .sample_rate
+                        .store(self.sample_rate.load(Ordering::Relaxed), Ordering::Relaxed);
+
                     if final_sample > self.debug.max_sample_val.load(Ordering::Relaxed) {
                         self.debug
                             .max_sample_val
@@ -89,6 +101,10 @@ impl Plugin for noise::Noise {
                     }
                 }
             }
+        }
+        if self.params.editor_state.is_open() {
+            self.spectrum.process_buffer(buffer);
+
         }
         ProcessStatus::Normal
     }
