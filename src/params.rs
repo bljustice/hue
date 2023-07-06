@@ -1,8 +1,8 @@
-use std::sync::Arc;
 use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
+use std::sync::Arc;
 
 use crate::editor;
 
