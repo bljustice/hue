@@ -9,7 +9,7 @@ use std::sync::{atomic::Ordering, Arc};
 
 use crate::config;
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
-use crate::noise;
+use crate::params::{NoiseParams, NoiseType};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PLUGIN_WIDTH: f32 = 400.0;
@@ -20,7 +20,7 @@ const ICON_DOWN_OPEN: &str = "\u{e75c}";
 #[derive(Lens)]
 struct UiData {
     pub gui_context: Arc<dyn GuiContext>,
-    params: Arc<noise::NoiseParams>,
+    params: Arc<NoiseParams>,
     noise_types: Vec<String>,
     debug: config::Debug,
     sample_rate: Arc<AtomicF32>,
@@ -39,19 +39,19 @@ impl Model for UiData {
             ParamChangeEvent::NoiseEvent(s) => {
                 if s == "white" {
                     setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::White);
+                    setter.set_parameter(&self.params.noise_type, NoiseType::White);
                     setter.end_set_parameter(&self.params.noise_type);
                 } else if s == "pink" {
                     setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::Pink);
+                    setter.set_parameter(&self.params.noise_type, NoiseType::Pink);
                     setter.end_set_parameter(&self.params.noise_type);
                 } else if s == "brown" {
                     setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::Brown);
+                    setter.set_parameter(&self.params.noise_type, NoiseType::Brown);
                     setter.end_set_parameter(&self.params.noise_type);
                 } else if s == "violet" {
                     setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, noise::NoiseType::Violet);
+                    setter.set_parameter(&self.params.noise_type, NoiseType::Violet);
                     setter.end_set_parameter(&self.params.noise_type);
                 }
             }
@@ -64,7 +64,7 @@ pub(crate) fn default_state() -> Arc<ViziaState> {
 }
 
 pub(crate) fn create(
-    params: Arc<noise::NoiseParams>,
+    params: Arc<NoiseParams>,
     editor_state: Arc<ViziaState>,
     debug: config::Debug,
     sample_rate: Arc<AtomicF32>,
