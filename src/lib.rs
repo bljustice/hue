@@ -16,10 +16,20 @@ impl Plugin for noise::Noise {
     const URL: &'static str = "";
     const EMAIL: &'static str = "";
 
-    const VERSION: &'static str = "0.0.1";
+    const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-    const DEFAULT_INPUT_CHANNELS: u32 = 2;
-    const DEFAULT_OUTPUT_CHANNELS: u32 = 2;
+    const AUDIO_IO_LAYOUTS: &'static [AudioIOLayout] = &[
+        AudioIOLayout {
+            main_input_channels: NonZeroU32::new(2),
+            main_output_channels: NonZeroU32::new(2),
+            ..AudioIOLayout::const_default()
+        },
+        AudioIOLayout {
+            main_input_channels: NonZeroU32::new(1),
+            main_output_channels: NonZeroU32::new(1),
+            ..AudioIOLayout::const_default()
+        },
+    ];
 
     const SAMPLE_ACCURATE_AUTOMATION: bool = true;
 
@@ -37,16 +47,11 @@ impl Plugin for noise::Noise {
         )
     }
 
-    fn accepts_bus_config(&self, config: &BusConfig) -> bool {
-        // This works with any symmetrical IO layout
-        config.num_input_channels == config.num_output_channels && config.num_input_channels > 0
-    }
-
     fn initialize(
         &mut self,
-        _bus_config: &BusConfig,
+        _audio_io_layout: &AudioIOLayout,
         _buffer_config: &BufferConfig,
-        _context: &mut impl InitContext,
+        _context: &mut impl InitContext<Self>,
     ) -> bool {
         let sr = _buffer_config.sample_rate;
         self.sample_rate.store(sr, Ordering::Relaxed);
@@ -68,7 +73,7 @@ impl Plugin for noise::Noise {
         &mut self,
         buffer: &mut Buffer,
         _aux: &mut AuxiliaryBuffers,
-        _context: &mut impl ProcessContext,
+        _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         for channel_samples in buffer.iter_samples() {
             let gain = self.params.gain.smoothed.next();
@@ -134,7 +139,8 @@ impl ClapPlugin for noise::Noise {
 
 impl Vst3Plugin for noise::Noise {
     const VST3_CLASS_ID: [u8; 16] = *b"NoiseGenVIIIZIAA";
-    const VST3_CATEGORIES: &'static str = "Fx|Noise";
+    const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] =
+        &[Vst3SubCategory::Fx, Vst3SubCategory::Tools];
 }
 
 nih_export_clap!(noise::Noise);
