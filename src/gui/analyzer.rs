@@ -5,8 +5,6 @@ use realfft::num_complex::Complex;
 use std::sync::{atomic::Ordering, Arc, Mutex};
 use triple_buffer::Output;
 
-// use crate::editor::SpectrumBuffer;
-
 pub type SpectrumBuffer = Arc<Mutex<Output<Vec<Complex<f32>>>>>;
 
 fn filter_frequency_range() -> FloatRange {

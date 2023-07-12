@@ -18,6 +18,12 @@ pub enum NoiseType {
     Violet,
 }
 
+#[derive(Enum, PartialEq, Debug)]
+pub enum WhiteNoiseDistribution {
+    Uniform,
+    Normal,
+}
+
 #[derive(Params)]
 pub struct NoiseParams {
     #[persist = "editor-state"]
@@ -28,13 +34,15 @@ pub struct NoiseParams {
 
     #[id = "noise type"]
     pub noise_type: EnumParam<NoiseType>,
+
+    #[id = "white noise distribution"]
+    pub white_noise_distribution: EnumParam<WhiteNoiseDistribution>,
 }
 
 impl Default for NoiseParams {
     fn default() -> Self {
         Self {
             editor_state: editor::default_state(),
-
             gain: FloatParam::new(
                 "Gain",
                 util::db_to_gain(0.0),
@@ -48,8 +56,11 @@ impl Default for NoiseParams {
             .with_unit(" dB")
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
             .with_string_to_value(formatters::s2v_f32_gain_to_db()),
-
             noise_type: EnumParam::new("Noise Type", NoiseType::White),
+            white_noise_distribution: EnumParam::new(
+                "White Noise Distribution",
+                WhiteNoiseDistribution::Normal,
+            ),
         }
     }
 }
