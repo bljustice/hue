@@ -29,7 +29,7 @@ struct UiData {
 }
 
 #[derive(Debug)]
-enum ParamChangeEvent {
+pub enum ParamChangeEvent {
     NoiseEvent(String),
     WhiteNoiseDistributionEvent(String),
 }

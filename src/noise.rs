@@ -11,21 +11,8 @@ use crate::spectrum::Spectrum;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
-// fn get_norm_dist_white_noise(rng: &mut StdRng) -> f32 {
-//     let normal_dist = Normal::<f32>::new(0.0, 1.0).unwrap();
-//     let random_sample = normal_dist.sample(rng);
-//     return random_sample.clamp(-1.0, 1.0);
-// }
-
-// fn get_uniform_dist_white_noise(rng: &mut StdRng) -> f32 {
-//     let uniform_dist = Uniform::<f32>::new(-1.0, 1.0);
-//     let random_sample = uniform_dist.sample(rng);
-//     return random_sample.clamp(-1.0, 1.0);
-// }
-
 pub struct Noise {
     pub params: Arc<NoiseParams>,
-    pub sample: f32,
     pub rng: StdRng,
     pub white: White,
     pub pink: Pink,
@@ -45,7 +32,6 @@ impl Default for Noise {
 
         Self {
             params: Arc::new(NoiseParams::default()),
-            sample: 0.0,
             rng: StdRng::from_entropy(),
             white: White::new(),
             pink: Pink::new(),
@@ -69,7 +55,7 @@ pub trait NoiseConfig {
                 return dist.sample(rng).clamp(-1.0, 1.0);
             }
             WhiteNoiseDistribution::Uniform => {
-                let dist = Uniform::<f32>::new(0.0, 1.0);
+                let dist = Uniform::<f32>::new(-1.0, 1.0);
                 return dist.sample(rng).clamp(-1.0, 1.0);
             }
             _ => 0.0,
@@ -96,24 +82,25 @@ impl NoiseConfig for White {
 
 #[derive(Debug, Clone)]
 pub struct Pink {
-    rows: [i64; Pink::MAX_RANDOM_ROWS],
-    running_sum: i64,
-    index: i32,
+    b0: f32,
+    b1: f32,
+    b2: f32,
+    b3: f32,
+    b4: f32,
+    b5: f32,
+    b6: f32,
 }
 
 impl Pink {
-    const MAX_RANDOM_ROWS: usize = 30;
-    const RANDOM_BITS: usize = 24;
-    const RANDOM_SHIFT: usize = std::mem::size_of::<i64>() * 8 - Pink::RANDOM_BITS;
-    const INDEX_MASK: i32 = (1 << (Pink::MAX_RANDOM_ROWS - 1)) - 1;
-    const SCALAR: f32 =
-        1.0 / ((Pink::MAX_RANDOM_ROWS + 1) * (1 << (Pink::RANDOM_BITS - 1)) as usize) as f32;
-
     pub fn new() -> Self {
         Pink {
-            rows: [0; Pink::MAX_RANDOM_ROWS],
-            running_sum: 0,
-            index: 0,
+            b0: 0.0,
+            b1: 0.0,
+            b2: 0.0,
+            b3: 0.0,
+            b4: 0.0,
+            b5: 0.0,
+            b6: 0.0,
         }
     }
 }
@@ -123,28 +110,26 @@ impl NoiseConfig for Pink {
         mem::replace(self, Pink::new());
     }
 
-    fn next(&mut self, _white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        // ported from here: https://github.com/PortAudio/portaudio/blob/master/examples/paex_pink.c
-        let mut new_random: i64;
+    fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
+        let white = self.white(white_noise_type, rng);
+        self.b0 = 0.99886 * self.b0 + white * 0.0555179;
+        self.b1 = 0.99332 * self.b1 + white * 0.0750759;
+        self.b2 = 0.96900 * self.b2 + white * 0.1538520;
+        self.b3 = 0.86650 * self.b3 + white * 0.3104856;
+        self.b4 = 0.55000 * self.b4 + white * 0.5329522;
+        self.b5 = -0.7616 * self.b5 - white * 0.0168980;
 
-        self.index = (self.index + 1) & Pink::INDEX_MASK;
-        if self.index != 0 {
-            let mut num_zeroes = 0;
-            let mut n = self.index;
+        let out = self.b0
+            + self.b1
+            + self.b2
+            + self.b3
+            + self.b4
+            + self.b5
+            + self.b6
+            + white * 0.5362;
 
-            while (n & 1) == 0 {
-                n = n >> 1;
-                num_zeroes += 1;
-            }
-
-            self.running_sum -= self.rows[num_zeroes];
-            new_random = rng.gen::<i64>() >> Pink::RANDOM_SHIFT;
-            self.running_sum += new_random;
-            self.rows[num_zeroes] = new_random;
-        }
-
-        new_random = rng.gen::<i64>() >> Pink::RANDOM_SHIFT;
-        return (self.running_sum + new_random) as f32 * Pink::SCALAR;
+        self.b6 = white * 0.115926;
+        return out * 0.05;
     }
 }
 
@@ -168,7 +153,6 @@ impl NoiseConfig for Brown {
     }
 
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        // let white = get_uniform_dist_white_noise(rng);
         let white = self.white(white_noise_type, rng);
         self.current_sample =
             ((self.leak * self.current_sample) + (1.0 - self.leak) * white).clamp(-1.0, 1.0);
@@ -194,7 +178,6 @@ impl NoiseConfig for Violet {
     }
 
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        // let white = get_norm_dist_white_noise(rng) * 0.1;
         let white = self.white(white_noise_type, rng) * 0.1;
         let violet = white - self.previous_sample;
         self.previous_sample = white;
