@@ -57,7 +57,10 @@ impl Default for NoiseParams {
             .with_value_to_string(formatters::v2s_f32_gain_to_db(2))
             .with_string_to_value(formatters::s2v_f32_gain_to_db()),
             noise_type: EnumParam::new("Noise Type", NoiseType::White),
-            white_noise_distribution: EnumParam::new("White Noise Distribution", WhiteNoiseDistribution::Normal),
+            white_noise_distribution: EnumParam::new(
+                "White Noise Distribution",
+                WhiteNoiseDistribution::Normal,
+            ),
         }
     }
 }

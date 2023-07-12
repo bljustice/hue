@@ -4,11 +4,11 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{config, params::WhiteNoiseDistribution};
 use crate::gui;
 use crate::params::NoiseParams;
 use crate::spectrum::Spectrum;
-use rand::{rngs::StdRng, Rng, SeedableRng};
+use crate::{config, params::WhiteNoiseDistribution};
+use rand::{rngs::StdRng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
 pub struct Noise {
@@ -119,14 +119,8 @@ impl NoiseConfig for Pink {
         self.b4 = 0.55000 * self.b4 + white * 0.5329522;
         self.b5 = -0.7616 * self.b5 - white * 0.0168980;
 
-        let out = self.b0
-            + self.b1
-            + self.b2
-            + self.b3
-            + self.b4
-            + self.b5
-            + self.b6
-            + white * 0.5362;
+        let out =
+            self.b0 + self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6 + white * 0.5362;
 
         self.b6 = white * 0.115926;
         return out * 0.05;

@@ -74,10 +74,18 @@ impl Plugin for noise::Noise {
             let gain = self.params.gain.smoothed.next();
 
             let noise_sample = match self.params.noise_type.value() {
-                NoiseType::White => self.white.next(&self.params.white_noise_distribution.value(), &mut self.rng),
-                NoiseType::Pink => self.pink.next(&self.params.white_noise_distribution.value(), &mut self.rng),
-                NoiseType::Brown => self.brown.next(&self.params.white_noise_distribution.value(), &mut self.rng),
-                NoiseType::Violet => self.violet.next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                NoiseType::White => self
+                    .white
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                NoiseType::Pink => self
+                    .pink
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                NoiseType::Brown => self
+                    .brown
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                NoiseType::Violet => self
+                    .violet
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
             };
 
             let final_sample = noise_sample * gain;
