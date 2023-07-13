@@ -15,8 +15,10 @@ impl Plugin for noise::Noise {
     const VENDOR: &'static str = "";
     const URL: &'static str = "";
     const EMAIL: &'static str = "";
-
-    const VERSION: &str = env!("CARGO_PKG_VERSION");
+    
+    const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+    type BackgroundTask = ();
+    type SysExMessage = ();
 
     const AUDIO_IO_LAYOUTS: &'static [AudioIOLayout] = &[
         AudioIOLayout {
@@ -37,7 +39,7 @@ impl Plugin for noise::Noise {
         self.params.clone()
     }
 
-    fn editor(&self) -> Option<Box<dyn Editor>> {
+    fn editor(&mut self, _async_executor: AsyncExecutor<Self>) -> Option<Box<dyn Editor>> {
         editor::create(
             self.params.clone(),
             self.params.editor_state.clone(),
