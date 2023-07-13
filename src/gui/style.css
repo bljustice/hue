@@ -1,0 +1,28 @@
+.title-container {
+    height: 20%;
+    top: 1%;
+}
+
+.gain-container {
+    height: 10%;
+}
+
+.spectrum-analyzer-container {
+    height: 15%;
+    width: 100%;
+    bottom: 5%;
+}
+
+.white-noise-dropdown-container {
+    height: 10%;
+    width: 100%;
+    top: 5%;
+}
+
+.debug-container {
+    height: 10px;
+    top: 50px;
+    width: 100%;
+    background-color: rgb(255, 255, 255);
+    color: rgb(0x69, 0x69, 0x69);
+}

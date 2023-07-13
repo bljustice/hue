@@ -1,10 +1,10 @@
 use atomic_float::AtomicF32;
-use nih_plug::context::{GuiContext, ParamSetter};
+use nih_plug::context::gui::{GuiContext, ParamSetter};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
-use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
+use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
 use std::sync::{atomic::Ordering, Arc};
 
 use crate::config;
@@ -79,7 +79,7 @@ impl Model for UiData {
 }
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::from_size(PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32)
+    ViziaState::new(|| (PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32))
 }
 
 pub(crate) fn create(
@@ -89,7 +89,12 @@ pub(crate) fn create(
     sample_rate: Arc<AtomicF32>,
     spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
-    create_vizia_editor(editor_state, move |cx, context| {
+    create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, context| {
+
+        assets::register_noto_sans_light(cx);
+        assets::register_noto_sans_thin(cx);
+        cx.add_theme(include_str!("gui/style.css"));
+
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
@@ -133,12 +138,13 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
     let version_str = format!("v{}", VERSION);
     VStack::new(cx, |cx| {
         Label::new(cx, "noisegen")
-            .font(assets::NOTO_SANS_THIN)
+            .font_family(vec![FamilyOwned::Name(String::from(
+                assets::NOTO_SANS_THIN,
+            ))])
             .font_size(40.0 * POINT_SCALE);
         Label::new(cx, &version_str).font_size(15.0 * POINT_SCALE);
     })
-    .top(Percentage(1.0))
-    .height(Percentage(20.0))
+    .class("title-container")
     .child_space(Stretch(1.0))
 }
 
@@ -147,7 +153,7 @@ fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
         Label::new(cx, "Gain").left(Percentage(40.0));
         ParamSlider::new(cx, UiData::params, |params| &params.gain);
     })
-    .height(Percentage(10.0))
+    .class("gain-container")
 }
 
 fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
@@ -160,9 +166,7 @@ fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
             );
         });
     })
-    .width(Percentage(100.0))
-    .height(Percentage(15.0))
-    .bottom(Percentage(5.0))
+    .class("spectrum-analyzer-container")
 }
 
 fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
@@ -212,10 +216,8 @@ fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
         .child_space(Stretch(1.0))
         .width(Percentage(100.0));
     })
-    .height(Percentage(10.0))
-    .top(Percentage(5.0))
-    .width(Percentage(100.0))
     .child_space(Stretch(1.0))
+    .class("white-noise-dropdown-container")
 }
 
 fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
@@ -333,9 +335,5 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
             },
         );
     })
-    .width(Pixels(PLUGIN_WIDTH))
-    .height(Pixels(10.0))
-    .top(Pixels(50.0))
-    .background_color(Color::rgb(255, 255, 255))
-    .color(Color::rgb(0x69, 0x69, 0x69))
+    .class("debug-container")
 }
