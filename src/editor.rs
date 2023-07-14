@@ -270,17 +270,31 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
     .class("noise-dropdown-container")
 }
 
-fn build_gui(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        create_title_block(cx);
-        create_gain_block(cx);
-        create_spectrum_analyzer(cx);
-        HStack::new(cx, move |cx| {
+fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
+    if cfg!(debug_assertions) {
+        return HStack::new(cx, move |cx| {
             create_noise_selector(cx);
             create_white_noise_selector(cx);
         })
         .class("all-dropdowns-container")
         .child_space(Stretch(1.0));
+    } else {
+        return HStack::new(cx, move |cx| {
+            create_noise_selector(cx);
+            create_white_noise_selector(cx);
+        })
+        .class("all-dropdowns-container")
+        .child_space(Stretch(1.0))
+        .bottom(Percentage(25.0));
+    }
+}
+
+fn build_gui(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
+        create_title_block(cx);
+        create_gain_block(cx);
+        create_spectrum_analyzer(cx);
+        create_noise_selector_row(cx);
         if cfg!(debug_assertions) {
             build_debug_window(cx);
         }
