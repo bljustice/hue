@@ -1,10 +1,10 @@
 use atomic_float::AtomicF32;
-use nih_plug::context::{GuiContext, ParamSetter};
+use nih_plug::context::gui::{GuiContext, ParamSetter};
 use nih_plug::prelude::Editor;
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
-use nih_plug_vizia::{assets, create_vizia_editor, ViziaState};
+use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
 use std::sync::{atomic::Ordering, Arc};
 
 use crate::config;
@@ -15,7 +15,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PLUGIN_WIDTH: f32 = 400.0;
 const PLUGIN_HEIGHT: f32 = 450.0;
 const POINT_SCALE: f32 = 0.75;
-const ICON_DOWN_OPEN: &str = "\u{e75c}";
+const ICON_DOWN_OPEN: &str = "\u{25BC}";
 
 #[derive(Lens)]
 struct UiData {
@@ -79,7 +79,7 @@ impl Model for UiData {
 }
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::from_size(PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32)
+    ViziaState::new(|| (PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32))
 }
 
 pub(crate) fn create(
@@ -89,7 +89,11 @@ pub(crate) fn create(
     sample_rate: Arc<AtomicF32>,
     spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
-    create_vizia_editor(editor_state, move |cx, context| {
+    create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, context| {
+        assets::register_noto_sans_light(cx);
+        assets::register_noto_sans_thin(cx);
+        cx.add_theme(include_str!("gui/style.css"));
+
         UiData {
             gui_context: context.clone(),
             params: params.clone(),
@@ -133,12 +137,13 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
     let version_str = format!("v{}", VERSION);
     VStack::new(cx, |cx| {
         Label::new(cx, "noisegen")
-            .font(assets::NOTO_SANS_THIN)
+            .font_family(vec![FamilyOwned::Name(String::from(
+                assets::NOTO_SANS_THIN,
+            ))])
             .font_size(40.0 * POINT_SCALE);
         Label::new(cx, &version_str).font_size(15.0 * POINT_SCALE);
     })
-    .top(Percentage(1.0))
-    .height(Percentage(20.0))
+    .class("title-container")
     .child_space(Stretch(1.0))
 }
 
@@ -147,7 +152,7 @@ fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
         Label::new(cx, "Gain").left(Percentage(40.0));
         ParamSlider::new(cx, UiData::params, |params| &params.gain);
     })
-    .height(Percentage(10.0))
+    .class("gain-container")
 }
 
 fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
@@ -160,18 +165,18 @@ fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
             );
         });
     })
-    .width(Percentage(100.0))
-    .height(Percentage(15.0))
-    .bottom(Percentage(5.0))
+    .class("spectrum-analyzer-container")
 }
 
 fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "White Noise Distribution").font_size(15.0 * POINT_SCALE);
+        Label::new(cx, "Distribution")
+            .font_size(15.0 * POINT_SCALE)
+            .class("dropdown-label");
         Dropdown::new(
             cx,
             move |cx| {
-                HStack::new(cx, move |cx| {
+                VStack::new(cx, move |cx| {
                     Label::new(
                         cx,
                         UiData::params.map(|p| p.white_noise_distribution.to_string()),
@@ -191,7 +196,6 @@ fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
                             move |cx, choice| {
                                 let selected = *item.get(cx) == *choice.get(cx);
                                 Label::new(cx, &item.get(cx))
-                                    .width(Percentage(100.0))
                                     .background_color(if selected {
                                         Color::from("#c28919")
                                     } else {
@@ -202,29 +206,31 @@ fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
                                             item.get(cx),
                                         ));
                                         cx.emit(views::PopupEvent::Close);
-                                    });
+                                    })
+                                    .child_space(Stretch(1.0))
+                                    .class("dropdown-label-value");
                             },
                         );
                     });
                 });
             },
         )
-        .child_space(Stretch(1.0))
-        .width(Percentage(100.0));
+        .width(Percentage(90.0))
+        .class("white-noise-dropdown");
     })
-    .height(Percentage(10.0))
-    .top(Percentage(5.0))
-    .width(Percentage(100.0))
     .child_space(Stretch(1.0))
+    .class("white-noise-dropdown-container")
 }
 
 fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "Noise Type").font_size(15.0 * POINT_SCALE);
+        Label::new(cx, "Noise Type")
+            .font_size(15.0 * POINT_SCALE)
+            .class("dropdown-label");
         Dropdown::new(
             cx,
             move |cx| {
-                HStack::new(cx, move |cx| {
+                VStack::new(cx, move |cx| {
                     Label::new(cx, UiData::params.map(|p| p.noise_type.to_string()));
                     Label::new(cx, ICON_DOWN_OPEN).class("arrow");
                 })
@@ -232,7 +238,6 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
                 .child_space(Stretch(1.0))
             },
             move |cx| {
-                // List of options
                 List::new(cx, UiData::noise_types, move |cx, _idx, item| {
                     VStack::new(cx, move |cx| {
                         Binding::new(
@@ -241,7 +246,6 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
                             move |cx, choice| {
                                 let selected = *item.get(cx) == *choice.get(cx);
                                 Label::new(cx, &item.get(cx))
-                                    .width(Percentage(100.0))
                                     .background_color(if selected {
                                         Color::from("#c28919")
                                     } else {
@@ -250,20 +254,39 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
                                     .on_press(move |cx| {
                                         cx.emit(ParamChangeEvent::NoiseEvent(item.get(cx)));
                                         cx.emit(views::PopupEvent::Close);
-                                    });
+                                    })
+                                    .child_space(Stretch(1.0))
+                                    .class("dropdown-label-value");
                             },
                         );
                     });
                 });
             },
         )
-        .child_space(Stretch(1.0))
-        .width(Percentage(100.0));
+        .width(Percentage(90.0))
+        .class("noise-dropdown");
     })
-    .height(Percentage(10.0))
-    .top(Percentage(5.0))
-    .width(Percentage(100.0))
     .child_space(Stretch(1.0))
+    .class("noise-dropdown-container")
+}
+
+fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
+    if cfg!(debug_assertions) {
+        return HStack::new(cx, move |cx| {
+            create_noise_selector(cx);
+            create_white_noise_selector(cx);
+        })
+        .class("all-dropdowns-container")
+        .child_space(Stretch(1.0));
+    } else {
+        return HStack::new(cx, move |cx| {
+            create_noise_selector(cx);
+            create_white_noise_selector(cx);
+        })
+        .class("all-dropdowns-container")
+        .child_space(Stretch(1.0))
+        .bottom(Percentage(25.0));
+    }
 }
 
 fn build_gui(cx: &mut Context) -> Handle<VStack> {
@@ -271,11 +294,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
         create_title_block(cx);
         create_gain_block(cx);
         create_spectrum_analyzer(cx);
-        HStack::new(cx, move |cx| {
-            create_noise_selector(cx);
-            create_white_noise_selector(cx);
-        })
-        .child_space(Stretch(1.0));
+        create_noise_selector_row(cx);
         if cfg!(debug_assertions) {
             build_debug_window(cx);
         }
@@ -333,9 +352,7 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
             },
         );
     })
-    .width(Pixels(PLUGIN_WIDTH))
-    .height(Pixels(10.0))
-    .top(Pixels(50.0))
+    .class("debug-container")
     .background_color(Color::rgb(255, 255, 255))
     .color(Color::rgb(0x69, 0x69, 0x69))
 }

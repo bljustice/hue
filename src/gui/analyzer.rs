@@ -63,7 +63,7 @@ impl SpectrumAnalyzer {
             path.line_to(bounds.x + bounds.w * x, bounds.y + bounds.h * (1. - h));
         }
 
-        canvas.stroke_path(&mut path, line_paint);
+        canvas.stroke_path(&mut path, &line_paint);
     }
 }
 

@@ -1,0 +1,45 @@
+.title-container {
+    height: 20%;
+    top: 1%;
+}
+
+.gain-container {
+    height: 10%;
+}
+
+.spectrum-analyzer-container {
+    height: 15%;
+    width: 100%;
+    bottom: 5%;
+}
+
+.white-noise-dropdown-container .noise-dropdown-container {
+    width: 100%;
+    top: 5%;
+}
+
+.debug-container {
+    height: 10px;
+    top: 50px;
+    width: 100%;
+}
+
+.arrow {
+    font-size: xx-small;
+}
+
+.title {
+    width: 100%;
+}
+
+.dropdown-label {
+    bottom: 5%;
+}
+
+.all-dropdowns-container {
+    width: 100%;
+}
+
+.dropdown-label-value {
+    width: 100%;
+}
