@@ -15,7 +15,7 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PLUGIN_WIDTH: f32 = 400.0;
 const PLUGIN_HEIGHT: f32 = 450.0;
 const POINT_SCALE: f32 = 0.75;
-const ICON_DOWN_OPEN: &str = "\u{e75c}";
+const ICON_DOWN_OPEN: &str = "\u{25BC}";
 
 #[derive(Lens)]
 struct UiData {
@@ -171,11 +171,13 @@ fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
 
 fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "White Noise Distribution").font_size(15.0 * POINT_SCALE);
+        Label::new(cx, "Distribution")
+            .font_size(15.0 * POINT_SCALE)
+            .class("dropdown-label");
         Dropdown::new(
             cx,
             move |cx| {
-                HStack::new(cx, move |cx| {
+                VStack::new(cx, move |cx| {
                     Label::new(
                         cx,
                         UiData::params.map(|p| p.white_noise_distribution.to_string()),
@@ -195,7 +197,6 @@ fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
                             move |cx, choice| {
                                 let selected = *item.get(cx) == *choice.get(cx);
                                 Label::new(cx, &item.get(cx))
-                                    .width(Percentage(100.0))
                                     .background_color(if selected {
                                         Color::from("#c28919")
                                     } else {
@@ -206,15 +207,17 @@ fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
                                             item.get(cx),
                                         ));
                                         cx.emit(views::PopupEvent::Close);
-                                    });
+                                    })
+                                .child_space(Stretch(1.0))
+                                .class("dropdown-label-value");
                             },
                         );
                     });
                 });
             },
         )
-        .child_space(Stretch(1.0))
-        .width(Percentage(100.0));
+        .width(Percentage(90.0))
+        .class("white-noise-dropdown");
     })
     .child_space(Stretch(1.0))
     .class("white-noise-dropdown-container")
@@ -222,11 +225,13 @@ fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
 
 fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "Noise Type").font_size(15.0 * POINT_SCALE);
+        Label::new(cx, "Noise Type")
+            .font_size(15.0 * POINT_SCALE)
+            .class("dropdown-label");
         Dropdown::new(
             cx,
             move |cx| {
-                HStack::new(cx, move |cx| {
+                VStack::new(cx, move |cx| {
                     Label::new(cx, UiData::params.map(|p| p.noise_type.to_string()));
                     Label::new(cx, ICON_DOWN_OPEN).class("arrow");
                 })
@@ -234,7 +239,6 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
                 .child_space(Stretch(1.0))
             },
             move |cx| {
-                // List of options
                 List::new(cx, UiData::noise_types, move |cx, _idx, item| {
                     VStack::new(cx, move |cx| {
                         Binding::new(
@@ -243,7 +247,6 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
                             move |cx, choice| {
                                 let selected = *item.get(cx) == *choice.get(cx);
                                 Label::new(cx, &item.get(cx))
-                                    .width(Percentage(100.0))
                                     .background_color(if selected {
                                         Color::from("#c28919")
                                     } else {
@@ -252,20 +255,20 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
                                     .on_press(move |cx| {
                                         cx.emit(ParamChangeEvent::NoiseEvent(item.get(cx)));
                                         cx.emit(views::PopupEvent::Close);
-                                    });
-                            },
+                                    })
+                                    .child_space(Stretch(1.0))
+                                    .class("dropdown-label-value");
+                                },
                         );
                     });
                 });
             },
         )
-        .child_space(Stretch(1.0))
-        .width(Percentage(100.0));
+        .width(Percentage(90.0))
+        .class("noise-dropdown");
     })
-    .height(Percentage(10.0))
-    .top(Percentage(5.0))
-    .width(Percentage(100.0))
     .child_space(Stretch(1.0))
+    .class("noise-dropdown-container")
 }
 
 fn build_gui(cx: &mut Context) -> Handle<VStack> {
@@ -277,6 +280,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
             create_noise_selector(cx);
             create_white_noise_selector(cx);
         })
+        .class("all-dropdowns-container")
         .child_space(Stretch(1.0));
         if cfg!(debug_assertions) {
             build_debug_window(cx);
@@ -336,4 +340,6 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
         );
     })
     .class("debug-container")
+    .background_color(Color::rgb(255, 255, 255))
+    .color(Color::rgb(0x69, 0x69, 0x69))
 }

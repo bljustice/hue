@@ -13,8 +13,7 @@
     bottom: 5%;
 }
 
-.white-noise-dropdown-container {
-    height: 10%;
+.white-noise-dropdown-container .noise-dropdown-container {
     width: 100%;
     top: 5%;
 }
@@ -23,6 +22,24 @@
     height: 10px;
     top: 50px;
     width: 100%;
-    background-color: rgb(255, 255, 255);
-    color: rgb(0x69, 0x69, 0x69);
+}
+
+.arrow {
+    font-size: xx-small;
+}
+
+.title {
+    width: 100%;
+}
+
+.dropdown-label {
+    bottom: 5%;
+}
+
+.all-dropdowns-container {
+    width: 100%;
+}
+
+.dropdown-label-value {
+    width: 100%;
 }
