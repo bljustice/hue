@@ -90,7 +90,6 @@ pub(crate) fn create(
     spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, context| {
-
         assets::register_noto_sans_light(cx);
         assets::register_noto_sans_thin(cx);
         cx.add_theme(include_str!("gui/style.css"));
@@ -208,8 +207,8 @@ fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
                                         ));
                                         cx.emit(views::PopupEvent::Close);
                                     })
-                                .child_space(Stretch(1.0))
-                                .class("dropdown-label-value");
+                                    .child_space(Stretch(1.0))
+                                    .class("dropdown-label-value");
                             },
                         );
                     });
@@ -258,7 +257,7 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
                                     })
                                     .child_space(Stretch(1.0))
                                     .class("dropdown-label-value");
-                                },
+                            },
                         );
                     });
                 });

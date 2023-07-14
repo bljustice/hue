@@ -15,7 +15,7 @@ impl Plugin for noise::Noise {
     const VENDOR: &'static str = "";
     const URL: &'static str = "";
     const EMAIL: &'static str = "";
-    
+
     const VERSION: &'static str = env!("CARGO_PKG_VERSION");
     type BackgroundTask = ();
     type SysExMessage = ();
