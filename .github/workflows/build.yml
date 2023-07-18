@@ -1,0 +1,94 @@
+name: automated-build
+
+on:
+  push:
+    branches:
+      - '**'
+    tags:
+      - '*.*.*'
+  pull_request:
+    branches:
+      - master
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        include:
+          - { name: ubuntu-18.04,       os: ubuntu-18.04,   cross-target: '' }
+          - { name: macos-universal,    os: macos-11,       cross-target: aarch64-apple-darwin }
+          - { name: windows,            os: windows-latest, cross-target: '' }
+    name: Package plugin binaries
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Fetch all git history
+        run: git fetch --force --prune --tags --unshallow
+
+      - name: Install dependencies
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2-dev libgl-dev libjack-dev libxcb1-dev libxcb-icccm4-dev libxcursor-dev libxkbcommon-dev libxcb-shape0-dev libxcb-xfixes0-dev
+      - uses: actions/cache@v2
+        if: startsWith(matrix.os, 'windows')
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+          key: ${{ matrix.name }}-${{ matrix.cross-target }}
+      - uses: actions/cache@v2
+        if: startsWith(matrix.os, 'windows') != true
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ matrix.name }}-${{ matrix.cross-target }}
+
+      - name: Set up Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: minimal
+          default: true
+          target: ${{ matrix.cross-target }}
+      - name: Package all targets from bundler.toml
+        run: |
+          # Building can be sped up by specifying all packages in one go
+          package_args=()
+          for package in $(cargo xtask known-packages); do
+            package_args+=("-p" "$package")
+          done
+
+          runner_name=${{ matrix.name }}
+          if [[ $runner_name = 'macos-universal' ]]; then
+            export MACOSX_DEPLOYMENT_TARGET=10.13
+            cargo xtask bundle-universal "${package_args[@]}" --release
+          else
+            cross_target=${{ matrix.cross-target }}
+            if [[ -n $cross_target ]]; then
+              package_args+=("--target" "$cross_target")
+            fi
+
+            cargo xtask bundle "${package_args[@]}" --release
+          fi
+      - name: Determine build archive name
+        run: |
+          echo "ARCHIVE_NAME=nih-plugs-$(git describe --always)-${{ matrix.name }}" >> "$GITHUB_ENV"
+      - name: Move all packaged plugin into a directory
+        run: |
+          # GitHub Action strips the top level directory, great, have another one
+          mkdir -p "$ARCHIVE_NAME/$ARCHIVE_NAME"
+          mv target/bundled/* "$ARCHIVE_NAME/$ARCHIVE_NAME"
+      - name: Add an OS-specific readme file with installation instructions
+        run: cp ".github/workflows/readme-${{ runner.os }}.txt" "$ARCHIVE_NAME/$ARCHIVE_NAME/README.txt"
+      - uses: actions/upload-artifact@v2
+        with:
+          name: ${{ env.ARCHIVE_NAME }}
+          path: ${{ env.ARCHIVE_NAME }}
