@@ -52,13 +52,12 @@ pub trait NoiseConfig {
         let random_sample: f32 = match white_noise_type {
             WhiteNoiseDistribution::Normal => {
                 let dist = Normal::<f32>::new(0.0, 1.0).unwrap();
-                return dist.sample(rng).clamp(-1.0, 1.0);
+                dist.sample(rng).clamp(-1.0, 1.0)
             }
             WhiteNoiseDistribution::Uniform => {
                 let dist = Uniform::<f32>::new(-1.0, 1.0);
-                return dist.sample(rng).clamp(-1.0, 1.0);
-            }
-            _ => 0.0,
+                dist.sample(rng).clamp(-1.0, 1.0)
+            },
         };
         return random_sample;
     }
@@ -107,7 +106,7 @@ impl Pink {
 
 impl NoiseConfig for Pink {
     fn reset(&mut self) {
-        mem::replace(self, Pink::new());
+        let _ = mem::replace(self, Pink::new());
     }
 
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
@@ -143,7 +142,7 @@ impl Brown {
 
 impl NoiseConfig for Brown {
     fn reset(&mut self) {
-        mem::replace(self, Brown::new(0.99));
+        let _ = mem::replace(self, Brown::new(0.99));
     }
 
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
@@ -168,7 +167,7 @@ impl Violet {
 
 impl NoiseConfig for Violet {
     fn reset(&mut self) {
-        mem::replace(self, Violet::new());
+        let _ = mem::replace(self, Violet::new());
     }
 
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
