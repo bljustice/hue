@@ -80,7 +80,7 @@ jobs:
           fi
       - name: Determine build archive name
         run: |
-          echo "ARCHIVE_NAME=bljustice-plugins-$(git describe --always)-${{ matrix.name }}" >> "$GITHUB_ENV"
+          echo "ARCHIVE_NAME=noisegen-$(git describe --always)-${{ matrix.name }}" >> "$GITHUB_ENV"
       - name: Move all packaged plugin into a directory
         run: |
           # GitHub Action strips the top level directory, great, have another one
