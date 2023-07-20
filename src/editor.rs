@@ -136,7 +136,7 @@ fn change_plugin_color(noise_color: &str) -> Color {
 fn create_title_block(cx: &mut Context) -> Handle<VStack> {
     let version_str = format!("v{}", VERSION);
     VStack::new(cx, |cx| {
-        Label::new(cx, "noisegen")
+        Label::new(cx, "hue")
             .font_family(vec![FamilyOwned::Name(String::from(
                 assets::NOTO_SANS_THIN,
             ))])
