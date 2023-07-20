@@ -11,7 +11,7 @@ mod params;
 mod spectrum;
 
 impl Plugin for noise::Noise {
-    const NAME: &'static str = "noisegen";
+    const NAME: &'static str = "hue";
     const VENDOR: &'static str = "";
     const URL: &'static str = "";
     const EMAIL: &'static str = "";
@@ -140,9 +140,9 @@ impl ClapPlugin for noise::Noise {
 }
 
 impl Vst3Plugin for noise::Noise {
-    const VST3_CLASS_ID: [u8; 16] = *b"NoiseGenVIIIZIAA";
+    const VST3_CLASS_ID: [u8; 16] = *b"huenoise........";
     const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] =
-        &[Vst3SubCategory::Fx, Vst3SubCategory::Tools];
+        &[Vst3SubCategory::Tools, Vst3SubCategory::Instrument];
 }
 
 nih_export_clap!(noise::Noise);
