@@ -13,7 +13,7 @@ use crate::params::{NoiseParams, NoiseType, WhiteNoiseDistribution};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PLUGIN_WIDTH: f32 = 400.0;
-const PLUGIN_HEIGHT: f32 = 450.0;
+const PLUGIN_HEIGHT: f32 = 550.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{25BC}";
 
@@ -32,6 +32,12 @@ struct UiData {
 pub enum ParamChangeEvent {
     NoiseEvent(String),
     WhiteNoiseDistributionEvent(String),
+    MixBeginSet,
+    MixEndSet,
+    MixSet(f32),
+    GainBeginSet,
+    GainEndSet,
+    GainSet(f32),
 }
 
 impl Model for UiData {
@@ -73,7 +79,26 @@ impl Model for UiData {
                     );
                     setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
+            },
+            ParamChangeEvent::MixBeginSet => {
+                setter.begin_set_parameter(&self.params.mix);
+            },
+            ParamChangeEvent::MixSet(f) => {
+                setter.set_parameter(&self.params.mix, *f);
+            },
+            ParamChangeEvent::MixEndSet => {
+                setter.end_set_parameter(&self.params.mix);
+            },
+            ParamChangeEvent::GainBeginSet => {
+                setter.begin_set_parameter(&self.params.gain);
+            },
+            ParamChangeEvent::GainSet(f) => {
+                setter.set_parameter(&self.params.gain, *f);
+            },
+            ParamChangeEvent::GainEndSet => {
+                setter.end_set_parameter(&self.params.gain);
             }
+
         });
     }
 }
@@ -148,33 +173,72 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
 
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "Gain").left(Percentage(40.0));
-        views::Knob::custom(cx, 0.5, UiData::params.map(|p| p.gain.value()), move |cx, gain_value| {
-            views::TickKnob::new(
-                cx,
-                Percentage(40.0),
-                // Percentage(20.0),
-                Pixels(4.),
-                Percentage(50.0),
-                270.0,
-                KnobMode::Continuous,
-            )
-            .value(gain_value.clone())
-            .class("tick");
-            views::ArcTrack::new(
-                cx,
-                false,
-                Percentage(50.0),
-                Percentage(10.),
-                -135.,
-                135.,
-                KnobMode::Continuous,
-            )
-            .value(gain_value)
+        // Label::new(cx, "Gain").left(Percentage(40.0));
+        Label::new(cx, "Gain");
+        views::Knob::custom(
+            cx,
+            0.5,
+            UiData::params.map(|p| p.gain.value()),
+            move |cx, gain_value| {
+                views::ArcTrack::new(
+                    cx,
+                    false,
+                    Percentage(50.0),
+                    Percentage(10.),
+                    -135.,
+                    135.,
+                    KnobMode::Continuous,
+                )
+                .value(gain_value)
+            }
+        )
+        .on_changing(move |cx, val| {
+            cx.emit(ParamChangeEvent::GainSet(val));
+        })
+        .on_press(move |cx| {
+            cx.emit(ParamChangeEvent::GainBeginSet);
+        })
+        .on_mouse_up(move |cx, _button| {
+            cx.emit(ParamChangeEvent::GainEndSet);
         });
         // ParamSlider::new(cx, UiData::params, |params| &params.gain);
     })
     .class("gain-container")
+}
+
+fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
+        // Label::new(cx, "Gain").left(Percentage(40.0));
+        Label::new(cx, "Mix");
+        views::Knob::custom(
+            cx,
+            0.5,
+            UiData::params.map(|p| p.gain.value()),
+            move |cx, gain_value| {
+                views::ArcTrack::new(
+                    cx,
+                    false,
+                    Percentage(50.0),
+                    Percentage(10.),
+                    -135.,
+                    135.,
+                    KnobMode::Continuous,
+                )
+                .value(gain_value)
+            }
+        )
+        .on_changing(move |cx, val| {
+            cx.emit(ParamChangeEvent::MixSet(val));
+        })
+        .on_press(move |cx| {
+            cx.emit(ParamChangeEvent::MixBeginSet);
+        })
+        .on_mouse_up(move |cx, _button| {
+            cx.emit(ParamChangeEvent::MixEndSet);
+        });
+        // ParamSlider::new(cx, UiData::params, |params| &params.gain);
+    })
+    .class("mix-container")
 }
 
 fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
@@ -302,6 +366,7 @@ fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
         .child_space(Stretch(1.0));
     } else {
         return HStack::new(cx, move |cx| {
+            create_gain_block(cx);
             create_noise_selector(cx);
             create_white_noise_selector(cx);
         })
@@ -314,8 +379,12 @@ fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
 fn build_gui(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         create_title_block(cx);
-        create_gain_block(cx);
         create_spectrum_analyzer(cx);
+        HStack::new(cx, move |cx| {
+            create_gain_block(cx);
+            create_mix_block(cx);
+        })
+        .class("all-dropdowns-container");
         create_noise_selector_row(cx);
         if cfg!(debug_assertions) {
             build_debug_window(cx);
