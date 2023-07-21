@@ -79,6 +79,7 @@ impl Plugin for noise::Noise {
     ) -> ProcessStatus {
         for channel_samples in buffer.iter_samples() {
             let gain = self.params.gain.smoothed.next();
+            let mix_level = self.params.mix.smoothed.next();
 
             let noise_sample = match self.params.noise_type.value() {
                 NoiseType::White => self
@@ -95,9 +96,9 @@ impl Plugin for noise::Noise {
                     .next(&self.params.white_noise_distribution.value(), &mut self.rng),
             };
 
-            let final_sample = noise_sample * gain;
+            let final_sample = noise_sample * gain * mix_level;
             for sample in channel_samples {
-                *sample = final_sample;
+                *sample = final_sample + (*sample * (1.0 - mix_level));
                 // this is useful for debugging the noise algorithm difference equations
                 if cfg!(debug_assertions) {
                     self.debug
@@ -106,7 +107,9 @@ impl Plugin for noise::Noise {
                     self.debug
                         .sample_rate
                         .store(self.sample_rate.load(Ordering::Relaxed), Ordering::Relaxed);
-
+                    self.debug
+                        .mix
+                        .store(mix_level, Ordering::Relaxed);
                     if final_sample > self.debug.max_sample_val.load(Ordering::Relaxed) {
                         self.debug
                             .max_sample_val

@@ -91,7 +91,6 @@ pub(crate) fn create(
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, context| {
         assets::register_noto_sans_light(cx);
-        assets::register_noto_sans_thin(cx);
         cx.add_theme(include_str!("gui/style.css"));
 
         UiData {
@@ -138,7 +137,7 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "hue")
             .font_family(vec![FamilyOwned::Name(String::from(
-                assets::NOTO_SANS_THIN,
+                assets::NOTO_SANS_LIGHT,
             ))])
             .font_size(40.0 * POINT_SCALE);
         Label::new(cx, &version_str).font_size(15.0 * POINT_SCALE);
@@ -150,7 +149,30 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "Gain").left(Percentage(40.0));
-        ParamSlider::new(cx, UiData::params, |params| &params.gain);
+        views::Knob::custom(cx, 0.5, UiData::params.map(|p| p.gain.value()), move |cx, gain_value| {
+            views::TickKnob::new(
+                cx,
+                Percentage(40.0),
+                // Percentage(20.0),
+                Pixels(4.),
+                Percentage(50.0),
+                270.0,
+                KnobMode::Continuous,
+            )
+            .value(gain_value.clone())
+            .class("tick");
+            views::ArcTrack::new(
+                cx,
+                false,
+                Percentage(50.0),
+                Percentage(10.),
+                -135.,
+                135.,
+                KnobMode::Continuous,
+            )
+            .value(gain_value)
+        });
+        // ParamSlider::new(cx, UiData::params, |params| &params.gain);
     })
     .class("gain-container")
 }
@@ -327,6 +349,7 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
                         p.sample_rate.load(Ordering::Relaxed),
                     ),
                     ("Output buffer len", p.output_buffer.load(Ordering::Relaxed)),
+                    ("Mix level", p.mix.load(Ordering::Relaxed)),
                 ];
             }),
             move |cx, lens| {
