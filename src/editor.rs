@@ -173,22 +173,17 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
 
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "Gain");        
-        views::Knob::new(
-            cx,
-            0.5,
-            UiData::params.map(|p| p.gain.value()),
-            false
-        )
-        .on_changing(move |cx, val| {
-            cx.emit(ParamChangeEvent::GainSet(val));
-        })
-        .on_press(move |cx| {
-            cx.emit(ParamChangeEvent::GainBeginSet);
-        })
-        .on_mouse_up(move |cx, _button| {
-            cx.emit(ParamChangeEvent::GainEndSet);
-        });
+        Label::new(cx, "Gain");
+        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.gain.value()), false)
+            .on_changing(move |cx, val| {
+                cx.emit(ParamChangeEvent::GainSet(val));
+            })
+            .on_press(move |cx| {
+                cx.emit(ParamChangeEvent::GainBeginSet);
+            })
+            .on_mouse_up(move |cx, _button| {
+                cx.emit(ParamChangeEvent::GainEndSet);
+            });
         Label::new(cx, UiData::params.map(|p| p.gain.to_string()));
     })
     .class("gain-container")
@@ -378,12 +373,15 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                                 "Current sampling rate".to_string(),
                                 p.sample_rate.load(Relaxed),
                             ),
-                            ("Output buffer len".to_string(), p.output_buffer.load(Relaxed)),
+                            (
+                                "Output buffer len".to_string(),
+                                p.output_buffer.load(Relaxed),
+                            ),
                             ("Mix level".to_string(), p.mix.load(Relaxed)),
                             ("Gain level".to_string(), p.gain.load(Relaxed)),
                         ];
                     }),
-                    "debug-container".to_string()
+                    "debug-container".to_string(),
                 );
             })
             .class("debug-row");

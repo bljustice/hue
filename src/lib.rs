@@ -104,7 +104,7 @@ impl Plugin for noise::Noise {
                     *sample,
                     self.sample_rate.load(Ordering::Relaxed),
                     mix_level,
-                    gain
+                    gain,
                 );
             }
         }
