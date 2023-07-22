@@ -189,6 +189,7 @@ fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
         .on_mouse_up(move |cx, _button| {
             cx.emit(ParamChangeEvent::GainEndSet);
         });
+        Label::new(cx, UiData::params.map(|p| p.gain.to_string()));
     })
     .class("gain-container")
 }
@@ -211,6 +212,7 @@ fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
         .on_mouse_up(move |cx, _button| {
             cx.emit(ParamChangeEvent::MixEndSet);
         });
+        Label::new(cx, UiData::params.map(|p| p.mix.to_string()));
     })
     .class("mix-container")
 }
