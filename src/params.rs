@@ -39,7 +39,7 @@ pub struct NoiseParams {
     pub white_noise_distribution: EnumParam<WhiteNoiseDistribution>,
 
     #[id = "mix"]
-    pub mix: FloatParam
+    pub mix: FloatParam,
 }
 
 impl Default for NoiseParams {
@@ -64,18 +64,11 @@ impl Default for NoiseParams {
                 "White Noise Distribution",
                 WhiteNoiseDistribution::Normal,
             ),
-            mix: FloatParam::new(
-                "Mix",
-                0.5,
-                FloatRange::Linear {
-                    min: 0.0,
-                    max: 1.0
-                }
-            )
-            .with_unit("%")
-            .with_smoother(SmoothingStyle::Linear(10.0))
-            .with_value_to_string(formatters::v2s_f32_percentage(0))
-            .with_string_to_value(formatters::s2v_f32_percentage()),
+            mix: FloatParam::new("Mix", 0.5, FloatRange::Linear { min: 0.0, max: 1.0 })
+                .with_unit("%")
+                .with_smoother(SmoothingStyle::Linear(10.0))
+                .with_value_to_string(formatters::v2s_f32_percentage(0))
+                .with_string_to_value(formatters::s2v_f32_percentage()),
         }
     }
 }

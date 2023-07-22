@@ -79,26 +79,25 @@ impl Model for UiData {
                     );
                     setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
-            },
+            }
             ParamChangeEvent::MixBeginSet => {
                 setter.begin_set_parameter(&self.params.mix);
-            },
+            }
             ParamChangeEvent::MixSet(f) => {
                 setter.set_parameter(&self.params.mix, *f);
-            },
+            }
             ParamChangeEvent::MixEndSet => {
                 setter.end_set_parameter(&self.params.mix);
-            },
+            }
             ParamChangeEvent::GainBeginSet => {
                 setter.begin_set_parameter(&self.params.gain);
-            },
+            }
             ParamChangeEvent::GainSet(f) => {
                 setter.set_parameter(&self.params.gain, *f);
-            },
+            }
             ParamChangeEvent::GainEndSet => {
                 setter.end_set_parameter(&self.params.gain);
             }
-
         });
     }
 }
@@ -174,21 +173,16 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "Gain");
-        views::Knob::new(
-            cx,
-            0.5,
-            UiData::params.map(|p| p.gain.value()),
-            false,
-        )
-        .on_changing(move |cx, val| {
-            cx.emit(ParamChangeEvent::GainSet(val));
-        })
-        .on_press(move |cx| {
-            cx.emit(ParamChangeEvent::GainBeginSet);
-        })
-        .on_mouse_up(move |cx, _button| {
-            cx.emit(ParamChangeEvent::GainEndSet);
-        });
+        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.gain.value()), false)
+            .on_changing(move |cx, val| {
+                cx.emit(ParamChangeEvent::GainSet(val));
+            })
+            .on_press(move |cx| {
+                cx.emit(ParamChangeEvent::GainBeginSet);
+            })
+            .on_mouse_up(move |cx, _button| {
+                cx.emit(ParamChangeEvent::GainEndSet);
+            });
         Label::new(cx, UiData::params.map(|p| p.gain.to_string()));
     })
     .class("gain-container")
@@ -197,21 +191,16 @@ fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
 fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "Mix");
-        views::Knob::new(
-            cx,
-            0.5,
-            UiData::params.map(|p| p.mix.value()),
-            false,
-        )
-        .on_changing(move |cx, val| {
-            cx.emit(ParamChangeEvent::MixSet(val));
-        })
-        .on_press(move |cx| {
-            cx.emit(ParamChangeEvent::MixBeginSet);
-        })
-        .on_mouse_up(move |cx, _button| {
-            cx.emit(ParamChangeEvent::MixEndSet);
-        });
+        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.mix.value()), false)
+            .on_changing(move |cx, val| {
+                cx.emit(ParamChangeEvent::MixSet(val));
+            })
+            .on_press(move |cx| {
+                cx.emit(ParamChangeEvent::MixBeginSet);
+            })
+            .on_mouse_up(move |cx, _button| {
+                cx.emit(ParamChangeEvent::MixEndSet);
+            });
         Label::new(cx, UiData::params.map(|p| p.mix.to_string()));
     })
     .class("mix-container")

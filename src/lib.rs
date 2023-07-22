@@ -107,9 +107,7 @@ impl Plugin for noise::Noise {
                     self.debug
                         .sample_rate
                         .store(self.sample_rate.load(Ordering::Relaxed), Ordering::Relaxed);
-                    self.debug
-                        .mix
-                        .store(mix_level, Ordering::Relaxed);
+                    self.debug.mix.store(mix_level, Ordering::Relaxed);
                     if final_sample > self.debug.max_sample_val.load(Ordering::Relaxed) {
                         self.debug
                             .max_sample_val
