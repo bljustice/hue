@@ -3,10 +3,10 @@
     top: 1%;
 }
 
-.gain-container {
+/* .gain-container {
     height: 12%;
     font-size: x-small;
-}
+} */
 
 .spectrum-analyzer-container {
     height: 10%;
@@ -47,12 +47,12 @@
 
 .knobs {
     child-space: 1s;
-    col-between: 15px;
+    col-between: 60px;
 }
 
 knob {
-    width: 80px;
-    height: 80px;
+    width: 40px;
+    height: 40px;
 }
 
 knob .tick {
@@ -60,5 +60,13 @@ knob .tick {
 }
 
 knob .track {
-    background-color: #1eafaf;
+    background-color: #7a7b7b;
+}
+
+.gain-container {
+    child-space: 1s;
+}
+
+.mix-container {
+    child-space: 1s;
 }

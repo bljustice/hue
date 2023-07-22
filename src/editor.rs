@@ -173,24 +173,12 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
 
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        // Label::new(cx, "Gain").left(Percentage(40.0));
         Label::new(cx, "Gain");
-        views::Knob::custom(
+        views::Knob::new(
             cx,
             0.5,
             UiData::params.map(|p| p.gain.value()),
-            move |cx, gain_value| {
-                views::ArcTrack::new(
-                    cx,
-                    false,
-                    Percentage(50.0),
-                    Percentage(10.),
-                    -135.,
-                    135.,
-                    KnobMode::Continuous,
-                )
-                .value(gain_value)
-            }
+            false,
         )
         .on_changing(move |cx, val| {
             cx.emit(ParamChangeEvent::GainSet(val));
@@ -201,31 +189,18 @@ fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
         .on_mouse_up(move |cx, _button| {
             cx.emit(ParamChangeEvent::GainEndSet);
         });
-        // ParamSlider::new(cx, UiData::params, |params| &params.gain);
     })
     .class("gain-container")
 }
 
 fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        // Label::new(cx, "Gain").left(Percentage(40.0));
         Label::new(cx, "Mix");
-        views::Knob::custom(
+        views::Knob::new(
             cx,
             0.5,
-            UiData::params.map(|p| p.gain.value()),
-            move |cx, gain_value| {
-                views::ArcTrack::new(
-                    cx,
-                    false,
-                    Percentage(50.0),
-                    Percentage(10.),
-                    -135.,
-                    135.,
-                    KnobMode::Continuous,
-                )
-                .value(gain_value)
-            }
+            UiData::params.map(|p| p.mix.value()),
+            false,
         )
         .on_changing(move |cx, val| {
             cx.emit(ParamChangeEvent::MixSet(val));
@@ -236,7 +211,6 @@ fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
         .on_mouse_up(move |cx, _button| {
             cx.emit(ParamChangeEvent::MixEndSet);
         });
-        // ParamSlider::new(cx, UiData::params, |params| &params.gain);
     })
     .class("mix-container")
 }
@@ -366,7 +340,6 @@ fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
         .child_space(Stretch(1.0));
     } else {
         return HStack::new(cx, move |cx| {
-            create_gain_block(cx);
             create_noise_selector(cx);
             create_white_noise_selector(cx);
         })
@@ -384,7 +357,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
             create_gain_block(cx);
             create_mix_block(cx);
         })
-        .class("all-dropdowns-container");
+        .class("knobs");
         create_noise_selector_row(cx);
         if cfg!(debug_assertions) {
             build_debug_window(cx);
