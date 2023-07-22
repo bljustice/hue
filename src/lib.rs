@@ -145,7 +145,7 @@ impl ClapPlugin for noise::Noise {
 impl Vst3Plugin for noise::Noise {
     const VST3_CLASS_ID: [u8; 16] = *b"huenoise........";
     const VST3_SUBCATEGORIES: &'static [Vst3SubCategory] =
-        &[Vst3SubCategory::Tools, Vst3SubCategory::Instrument];
+        &[Vst3SubCategory::Tools, Vst3SubCategory::Fx];
 }
 
 nih_export_clap!(noise::Noise);
