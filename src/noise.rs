@@ -57,7 +57,7 @@ pub trait NoiseConfig {
             WhiteNoiseDistribution::Uniform => {
                 let dist = Uniform::<f32>::new(-1.0, 1.0);
                 dist.sample(rng).clamp(-1.0, 1.0)
-            },
+            }
         };
         return random_sample;
     }

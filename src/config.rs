@@ -8,6 +8,7 @@ pub struct Debug {
     pub min_sample_val: Arc<AtomicF32>,
     pub sample_rate: Arc<AtomicF32>,
     pub output_buffer: Arc<AtomicF32>,
+    pub mix: Arc<AtomicF32>,
 }
 
 impl Default for Debug {
@@ -18,6 +19,7 @@ impl Default for Debug {
             min_sample_val: Arc::new(AtomicF32::new(0.0)),
             sample_rate: Arc::new(AtomicF32::new(0.0)),
             output_buffer: Arc::new(AtomicF32::new(0.0)),
+            mix: Arc::new(AtomicF32::new(0.5)),
         }
     }
 }

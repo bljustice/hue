@@ -3,12 +3,8 @@
     top: 1%;
 }
 
-.gain-container {
-    height: 10%;
-}
-
 .spectrum-analyzer-container {
-    height: 15%;
+    height: 10%;
     width: 100%;
     bottom: 5%;
 }
@@ -42,4 +38,32 @@
 
 .dropdown-label-value {
     width: 100%;
+}
+
+.knob-container {
+    child-space: 1s;
+    col-between: 40%;
+}
+
+knob {
+    width: 40px;
+    height: 40px;
+}
+
+knob .tick {
+    background-color: #eeece4be;
+}
+
+knob .track {
+    background-color: #dcdbdb;
+}
+
+.gain-container {
+    child-space: 1s;
+    font-size: medium;
+}
+
+.mix-container {
+    child-space: 1s;
+    font-size: medium;
 }

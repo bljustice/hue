@@ -13,7 +13,7 @@ use crate::params::{NoiseParams, NoiseType, WhiteNoiseDistribution};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PLUGIN_WIDTH: f32 = 400.0;
-const PLUGIN_HEIGHT: f32 = 450.0;
+const PLUGIN_HEIGHT: f32 = 550.0;
 const POINT_SCALE: f32 = 0.75;
 const ICON_DOWN_OPEN: &str = "\u{25BC}";
 
@@ -32,6 +32,12 @@ struct UiData {
 pub enum ParamChangeEvent {
     NoiseEvent(String),
     WhiteNoiseDistributionEvent(String),
+    MixBeginSet,
+    MixEndSet,
+    MixSet(f32),
+    GainBeginSet,
+    GainEndSet,
+    GainSet(f32),
 }
 
 impl Model for UiData {
@@ -74,6 +80,24 @@ impl Model for UiData {
                     setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
             }
+            ParamChangeEvent::MixBeginSet => {
+                setter.begin_set_parameter(&self.params.mix);
+            }
+            ParamChangeEvent::MixSet(f) => {
+                setter.set_parameter(&self.params.mix, *f);
+            }
+            ParamChangeEvent::MixEndSet => {
+                setter.end_set_parameter(&self.params.mix);
+            }
+            ParamChangeEvent::GainBeginSet => {
+                setter.begin_set_parameter(&self.params.gain);
+            }
+            ParamChangeEvent::GainSet(f) => {
+                setter.set_parameter(&self.params.gain, *f);
+            }
+            ParamChangeEvent::GainEndSet => {
+                setter.end_set_parameter(&self.params.gain);
+            }
         });
     }
 }
@@ -91,7 +115,6 @@ pub(crate) fn create(
 ) -> Option<Box<dyn Editor>> {
     create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, context| {
         assets::register_noto_sans_light(cx);
-        assets::register_noto_sans_thin(cx);
         cx.add_theme(include_str!("gui/style.css"));
 
         UiData {
@@ -138,7 +161,7 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "hue")
             .font_family(vec![FamilyOwned::Name(String::from(
-                assets::NOTO_SANS_THIN,
+                assets::NOTO_SANS_LIGHT,
             ))])
             .font_size(40.0 * POINT_SCALE);
         Label::new(cx, &version_str).font_size(15.0 * POINT_SCALE);
@@ -149,10 +172,38 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
 
 fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
-        Label::new(cx, "Gain").left(Percentage(40.0));
-        ParamSlider::new(cx, UiData::params, |params| &params.gain);
+        Label::new(cx, "Gain");
+        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.gain.value()), false)
+            .on_changing(move |cx, val| {
+                cx.emit(ParamChangeEvent::GainSet(val));
+            })
+            .on_press(move |cx| {
+                cx.emit(ParamChangeEvent::GainBeginSet);
+            })
+            .on_mouse_up(move |cx, _button| {
+                cx.emit(ParamChangeEvent::GainEndSet);
+            });
+        Label::new(cx, UiData::params.map(|p| p.gain.to_string()));
     })
     .class("gain-container")
+}
+
+fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
+        Label::new(cx, "Mix");
+        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.mix.value()), false)
+            .on_changing(move |cx, val| {
+                cx.emit(ParamChangeEvent::MixSet(val));
+            })
+            .on_press(move |cx| {
+                cx.emit(ParamChangeEvent::MixBeginSet);
+            })
+            .on_mouse_up(move |cx, _button| {
+                cx.emit(ParamChangeEvent::MixEndSet);
+            });
+        Label::new(cx, UiData::params.map(|p| p.mix.to_string()));
+    })
+    .class("mix-container")
 }
 
 fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
@@ -292,8 +343,12 @@ fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
 fn build_gui(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         create_title_block(cx);
-        create_gain_block(cx);
         create_spectrum_analyzer(cx);
+        HStack::new(cx, move |cx| {
+            create_gain_block(cx);
+            create_mix_block(cx);
+        })
+        .class("knob-container");
         create_noise_selector_row(cx);
         if cfg!(debug_assertions) {
             build_debug_window(cx);
@@ -327,6 +382,7 @@ fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
                         p.sample_rate.load(Ordering::Relaxed),
                     ),
                     ("Output buffer len", p.output_buffer.load(Ordering::Relaxed)),
+                    ("Mix level", p.mix.load(Ordering::Relaxed)),
                 ];
             }),
             move |cx, lens| {
