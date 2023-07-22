@@ -348,7 +348,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
             create_gain_block(cx);
             create_mix_block(cx);
         })
-        .class("knobs");
+        .class("knob-container");
         create_noise_selector_row(cx);
         if cfg!(debug_assertions) {
             build_debug_window(cx);
