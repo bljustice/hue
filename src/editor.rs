@@ -5,10 +5,11 @@ use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
-use std::sync::{atomic::Ordering, Arc};
+use std::sync::{atomic::Ordering::Relaxed, Arc};
 
 use crate::config;
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
+use crate::gui::debug::DebugContainer;
 use crate::params::{NoiseParams, NoiseType, WhiteNoiseDistribution};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -351,64 +352,42 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
         .class("knob-container");
         create_noise_selector_row(cx);
         if cfg!(debug_assertions) {
-            build_debug_window(cx);
+            HStack::new(cx, move |cx| {
+                DebugContainer::new(
+                    cx,
+                    UiData::debug.map(|p| {
+                        return vec![
+                            (
+                                "Curent sample value".to_string(),
+                                p.current_sample_val.load(Relaxed),
+                            ),
+                            (
+                                "Min sample value seen".to_string(),
+                                p.min_sample_val.load(Relaxed),
+                            ),
+                            (
+                                "Max sample value seen".to_string(),
+                                p.max_sample_val.load(Relaxed),
+                            ),
+                            (
+                                "Current sampling rate".to_string(),
+                                p.sample_rate.load(Relaxed),
+                            ),
+                            (
+                                "Output buffer len".to_string(),
+                                p.output_buffer.load(Relaxed),
+                            ),
+                            ("Mix level".to_string(), p.mix.load(Relaxed)),
+                            ("Gain level".to_string(), p.gain.load(Relaxed)),
+                        ];
+                    }),
+                    "debug-container".to_string(),
+                );
+            })
+            .class("debug-row");
         }
     })
     .row_between(Pixels(0.0))
     .child_left(Stretch(1.0))
     .child_right(Stretch(1.0))
-}
-
-fn build_debug_window(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, move |cx| {
-        Binding::new(
-            cx,
-            UiData::debug.map(|p| {
-                return vec![
-                    (
-                        "Curent sample value",
-                        p.current_sample_val.load(Ordering::Relaxed),
-                    ),
-                    (
-                        "Min sample value seen",
-                        p.min_sample_val.load(Ordering::Relaxed),
-                    ),
-                    (
-                        "Max sample value seen",
-                        p.max_sample_val.load(Ordering::Relaxed),
-                    ),
-                    (
-                        "Current sampling rate",
-                        p.sample_rate.load(Ordering::Relaxed),
-                    ),
-                    ("Output buffer len", p.output_buffer.load(Ordering::Relaxed)),
-                    ("Mix level", p.mix.load(Ordering::Relaxed)),
-                ];
-            }),
-            move |cx, lens| {
-                let debug_vals = lens.get(cx);
-                for val_tuple in debug_vals {
-                    HStack::new(cx, move |cx| {
-                        let (sample_str, sample_val) = val_tuple;
-                        let label_str = format!("{}: {}", &sample_str, &sample_val.to_string());
-                        Label::new(cx, &label_str);
-                    });
-                }
-            },
-        );
-        Binding::new(
-            cx,
-            UiData::params.map(|p| nih_plug::util::db_to_gain(p.gain.value())),
-            move |cx, lens| {
-                HStack::new(cx, move |cx| {
-                    let gain_val = lens.get(cx);
-                    let gain_str = format!("dB to gain val: {}", &gain_val.to_string());
-                    Label::new(cx, &gain_str);
-                });
-            },
-        );
-    })
-    .class("debug-container")
-    .background_color(Color::rgb(255, 255, 255))
-    .color(Color::rgb(0x69, 0x69, 0x69))
 }

@@ -20,6 +20,10 @@
     width: 100%;
 }
 
+.debug-row {
+    width: 100%
+}
+
 .arrow {
     font-size: xx-small;
 }
@@ -50,12 +54,8 @@ knob {
     height: 40px;
 }
 
-knob .tick {
-    background-color: #eeece4be;
-}
-
 knob .track {
-    background-color: #dcdbdb;
+    background-color: #1eaf75;
 }
 
 .gain-container {

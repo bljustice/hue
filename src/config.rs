@@ -1,5 +1,5 @@
 use atomic_float::AtomicF32;
-use std::sync::Arc;
+use std::sync::{atomic::Ordering::Relaxed, Arc};
 
 #[derive(Clone)]
 pub struct Debug {
@@ -9,6 +9,7 @@ pub struct Debug {
     pub sample_rate: Arc<AtomicF32>,
     pub output_buffer: Arc<AtomicF32>,
     pub mix: Arc<AtomicF32>,
+    pub gain: Arc<AtomicF32>,
 }
 
 impl Default for Debug {
@@ -20,6 +21,24 @@ impl Default for Debug {
             sample_rate: Arc::new(AtomicF32::new(0.0)),
             output_buffer: Arc::new(AtomicF32::new(0.0)),
             mix: Arc::new(AtomicF32::new(0.5)),
+            gain: Arc::new(AtomicF32::new(0.0)),
+        }
+    }
+}
+
+impl Debug {
+    pub fn update(&mut self, sample_value: f32, sample_rate: f32, mix_level: f32, gain_level: f32) {
+        if cfg!(debug_assertions) {
+            self.current_sample_val.store(sample_value, Relaxed);
+            self.sample_rate.store(sample_rate, Relaxed);
+            self.mix.store(mix_level, Relaxed);
+            self.gain.store(gain_level, Relaxed);
+
+            if sample_value > self.max_sample_val.load(Relaxed) {
+                self.max_sample_val.store(sample_value, Relaxed);
+            } else if sample_value < self.min_sample_val.load(Relaxed) {
+                self.min_sample_val.store(sample_value, Relaxed);
+            }
         }
     }
 }
