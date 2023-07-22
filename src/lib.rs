@@ -99,25 +99,13 @@ impl Plugin for noise::Noise {
             let final_sample = noise_sample * gain * mix_level;
             for sample in channel_samples {
                 *sample = final_sample + (*sample * (1.0 - mix_level));
-                // this is useful for debugging the noise algorithm difference equations
-                if cfg!(debug_assertions) {
-                    self.debug
-                        .current_sample_val
-                        .store(final_sample, Ordering::Relaxed);
-                    self.debug
-                        .sample_rate
-                        .store(self.sample_rate.load(Ordering::Relaxed), Ordering::Relaxed);
-                    self.debug.mix.store(mix_level, Ordering::Relaxed);
-                    if final_sample > self.debug.max_sample_val.load(Ordering::Relaxed) {
-                        self.debug
-                            .max_sample_val
-                            .store(final_sample, Ordering::Relaxed);
-                    } else if final_sample < self.debug.min_sample_val.load(Ordering::Relaxed) {
-                        self.debug
-                            .min_sample_val
-                            .store(final_sample, Ordering::Relaxed);
-                    }
-                }
+
+                self.debug.update(
+                    *sample,
+                    self.sample_rate.load(Ordering::Relaxed),
+                    mix_level,
+                    gain
+                );
             }
         }
         if self.params.editor_state.is_open() {
