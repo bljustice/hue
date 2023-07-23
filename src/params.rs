@@ -51,8 +51,8 @@ impl Default for NoiseParams {
                 util::db_to_gain(0.0),
                 FloatRange::Skewed {
                     min: util::db_to_gain(-30.0),
-                    max: util::db_to_gain(6.0),
-                    factor: FloatRange::gain_skew_factor(-30.0, 6.0),
+                    max: util::db_to_gain(30.0),
+                    factor: FloatRange::gain_skew_factor(-30.0, 30.0),
                 },
             )
             .with_smoother(SmoothingStyle::Logarithmic(50.0))

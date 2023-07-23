@@ -99,13 +99,15 @@ impl Plugin for noise::Noise {
             let final_sample = noise_sample * gain * mix_level;
             for sample in channel_samples {
                 *sample = final_sample + (*sample * (1.0 - mix_level));
-
-                self.debug.update(
-                    *sample,
-                    self.sample_rate.load(Ordering::Relaxed),
-                    mix_level,
-                    gain,
-                );
+                
+                if cfg!(debug_assertions) {
+                    self.debug.update(
+                        *sample,
+                        self.sample_rate.load(Ordering::Relaxed),
+                        mix_level,
+                        gain,
+                    );
+                }
             }
         }
         if self.params.editor_state.is_open() {
