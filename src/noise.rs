@@ -4,6 +4,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
+use crate::filters::biquad::Biquad;
 use crate::gui;
 use crate::params::NoiseParams;
 use crate::spectrum::Spectrum;
@@ -22,6 +23,7 @@ pub struct Noise {
     pub sample_rate: Arc<AtomicF32>,
     pub spectrum: Spectrum,
     pub spectrum_output_buffer: gui::analyzer::SpectrumBuffer,
+    pub lpf: Biquad,
 }
 
 impl Default for Noise {
@@ -41,6 +43,7 @@ impl Default for Noise {
             sample_rate,
             spectrum,
             spectrum_output_buffer,
+            lpf: Biquad::new(),
         }
     }
 }

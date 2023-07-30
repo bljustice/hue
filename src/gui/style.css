@@ -67,3 +67,8 @@ knob .track {
     child-space: 1s;
     font-size: medium;
 }
+
+.lpf-container {
+    child-space: 1s;
+    font-size: medium;
+}

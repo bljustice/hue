@@ -3,12 +3,15 @@ use noise::NoiseConfig;
 use params::NoiseType;
 use std::sync::{atomic::Ordering, Arc};
 
+mod filters;
 mod config;
 mod editor;
 mod gui;
 mod noise;
 mod params;
 mod spectrum;
+
+use crate::filters::coefficients;
 
 impl Plugin for noise::Noise {
     const NAME: &'static str = "hue";
@@ -78,8 +81,15 @@ impl Plugin for noise::Noise {
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
         for channel_samples in buffer.iter_samples() {
+
             let gain = self.params.gain.smoothed.next();
             let mix_level = self.params.mix.smoothed.next();
+            let sr = self.sample_rate.load(Ordering::Relaxed);
+            let lpf_fc = self.params.lpf_fc.smoothed.next();
+
+            let lpf_coefficients = coefficients::FilterCoefficients::from(
+                (coefficients::FilterType::Lowpass, lpf_fc, sr)
+            );
 
             let noise_sample = match self.params.noise_type.value() {
                 NoiseType::White => self
@@ -96,14 +106,15 @@ impl Plugin for noise::Noise {
                     .next(&self.params.white_noise_distribution.value(), &mut self.rng),
             };
 
-            let final_sample = noise_sample * gain * mix_level;
+            let final_sample = self.lpf.process(noise_sample, lpf_coefficients) * gain * mix_level;
+            // let final_sample = noise_sample * gain * mix_level;
             for sample in channel_samples {
                 *sample = final_sample + (*sample * (1.0 - mix_level));
                 
                 if cfg!(debug_assertions) {
                     self.debug.update(
                         *sample,
-                        self.sample_rate.load(Ordering::Relaxed),
+                        sr,
                         mix_level,
                         gain,
                     );

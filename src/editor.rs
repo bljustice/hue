@@ -39,6 +39,9 @@ pub enum ParamChangeEvent {
     GainBeginSet,
     GainEndSet,
     GainSet(f32),
+    LpfBeginSet,
+    LpfEndSet,
+    LpfSet(f32),
 }
 
 impl Model for UiData {
@@ -98,6 +101,15 @@ impl Model for UiData {
             }
             ParamChangeEvent::GainEndSet => {
                 setter.end_set_parameter(&self.params.gain);
+            }
+            ParamChangeEvent::LpfBeginSet => {
+                setter.begin_set_parameter(&self.params.lpf_fc);
+            }
+            ParamChangeEvent::LpfSet(f) => {
+                setter.set_parameter(&self.params.lpf_fc, *f);
+            }
+            ParamChangeEvent::LpfEndSet => {
+                setter.end_set_parameter(&self.params.lpf_fc);
             }
         });
     }
@@ -192,7 +204,7 @@ fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
 fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "Mix");
-        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.mix.value()), false)
+        views::Knob::new(cx, 1000., UiData::params.map(|p| p.mix.value()), false)
             .on_changing(move |cx, val| {
                 cx.emit(ParamChangeEvent::MixSet(val));
             })
@@ -205,6 +217,24 @@ fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
         Label::new(cx, UiData::params.map(|p| p.mix.to_string()));
     })
     .class("mix-container")
+}
+
+fn create_lpf_block(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
+        Label::new(cx, "LPF");
+        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.lpf_fc.value()), false)
+            .on_changing(move |cx, val| {
+                cx.emit(ParamChangeEvent::LpfSet(val));
+            })
+            .on_press(move |cx| {
+                cx.emit(ParamChangeEvent::LpfBeginSet);
+            })
+            .on_mouse_up(move |cx, _button| {
+                cx.emit(ParamChangeEvent::LpfEndSet);
+            });
+        Label::new(cx, UiData::params.map(|p| p.lpf_fc.to_string()));
+    })
+    .class("lpf-container")
 }
 
 fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
@@ -348,6 +378,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
         HStack::new(cx, move |cx| {
             create_gain_block(cx);
             create_mix_block(cx);
+            create_lpf_block(cx);
         })
         .class("knob-container");
         create_noise_selector_row(cx);
