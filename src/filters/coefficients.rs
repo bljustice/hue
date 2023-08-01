@@ -2,7 +2,6 @@ use std::f32::consts::{TAU, FRAC_1_SQRT_2};
 
 pub enum FilterType {
     Lowpass,
-    Highpass,
 }
 
 pub struct FilterCoefficients {
@@ -16,38 +15,37 @@ pub struct FilterCoefficients {
     pub a2: f32,
 }
 
-impl From<(FilterType, f32, f32)> for FilterCoefficients {
-    fn from(params: (FilterType, f32, f32)) -> Self {
-
-        let (filter_type, fc, sample_rate) = params;
-        let f = match filter_type {
-            FilterType::Lowpass => FilterCoefficients::lowpass(fc, sample_rate),
-            FilterType::Highpass => todo!(),
-        };
-        f
+impl Default for FilterCoefficients {
+    fn default() -> Self {
+        Self {
+            b0: 0.0,
+            b1: 0.0,
+            b2: 0.0,
+            a0: 0.0,
+            a1: 0.0,
+            a2: 0.0,
+        }
     }
 }
 
 impl FilterCoefficients {
-    fn lowpass(fc: f32, sample_rate: f32) -> Self {
+    fn lowpass(&mut self, fc: f32, sample_rate: f32) {
         let omega_c = TAU * (fc / sample_rate);
         let cos_omega_c = omega_c.cos();
         let alpha = omega_c.sin() / (2.0 * FRAC_1_SQRT_2);
 
-        let a0 = 1.0 + alpha;
-        let b0 = ((1.0 - cos_omega_c) / 2.0) / a0;
-        let b1 = (1.0 - cos_omega_c) / a0;
-        let b2 = ((1.0 - cos_omega_c) / 2.0) / a0;
-        let a1 = (-2.0 * cos_omega_c) / a0;
-        let a2 = (1.0 - alpha) / a0;
+        self.a0 = 1.0 + alpha;
+        self.b0 = ((1.0 - cos_omega_c) / 2.0) / self.a0;
+        self.b1 = (1.0 - cos_omega_c) / self.a0;
+        self.b2 = ((1.0 - cos_omega_c) / 2.0) / self.a0;
+        self.a1 = (-2.0 * cos_omega_c) / self.a0;
+        self.a2 = (1.0 - alpha) / self.a0;
+    }
 
-        Self {
-            b0,
-            b1,
-            b2,
-            a0,
-            a1,
-            a2,
-        }
+    pub fn update(&mut self, fc: f32, sample_rate: f32, filter_type: FilterType) {
+        match filter_type {
+            FilterType::Lowpass => self.lowpass(fc, sample_rate),
+        };
+
     }
 }

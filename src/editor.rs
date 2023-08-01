@@ -204,7 +204,7 @@ fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
 fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "Mix");
-        views::Knob::new(cx, 1000., UiData::params.map(|p| p.mix.value()), false)
+        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.mix.value()), false)
             .on_changing(move |cx, val| {
                 cx.emit(ParamChangeEvent::MixSet(val));
             })

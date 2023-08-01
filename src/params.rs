@@ -2,7 +2,7 @@ use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
-use std::sync::Arc;
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 
 use crate::editor;
 
@@ -41,12 +41,12 @@ pub struct NoiseParams {
     #[id = "mix"]
     pub mix: FloatParam,
 
-    #[id = "lpf fc"]
+    #[id = "lowpass frequency cutoff"]
     pub lpf_fc: FloatParam,
 }
 
-impl Default for NoiseParams {
-    fn default() -> Self {
+impl NoiseParams {
+    pub fn new(should_update_filters: Arc<AtomicBool>) -> Self {
         Self {
             editor_state: editor::default_state(),
             gain: FloatParam::new(
@@ -73,17 +73,21 @@ impl Default for NoiseParams {
                 .with_value_to_string(formatters::v2s_f32_percentage(0))
                 .with_string_to_value(formatters::s2v_f32_percentage()),
             lpf_fc: FloatParam::new(
-                "LP FC",
-                5000.,
+                "Lowpass Freq Cutoff",
+                15000.,
                 FloatRange::Skewed {
-                    min: 1000.,
+                    min: 5.,
                     max: 20_000.,
-                    factor: FloatRange::skew_factor(-1.0),
+                    factor: FloatRange::skew_factor(-2.5),
                 }
                 )
                 .with_smoother(SmoothingStyle::Logarithmic(100.0))
                 .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))
-                .with_string_to_value(formatters::s2v_f32_hz_then_khz()),
+                .with_string_to_value(formatters::s2v_f32_hz_then_khz())
+                .with_callback({
+                    let should_update_filters = should_update_filters.clone();
+                    Arc::new(move |_| should_update_filters.store(true, Ordering::Relaxed))
+                })
         }
     }
 }
