@@ -10,6 +10,7 @@ use std::sync::{atomic::Ordering::Relaxed, Arc};
 use crate::config;
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::gui::debug::DebugContainer;
+use crate::gui::knob::KnobContainer;
 use crate::params::{NoiseParams, NoiseType, WhiteNoiseDistribution};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -33,14 +34,8 @@ struct UiData {
 pub enum ParamChangeEvent {
     NoiseEvent(String),
     WhiteNoiseDistributionEvent(String),
-    MixBeginSet,
-    MixEndSet,
     MixSet(f32),
-    GainBeginSet,
-    GainEndSet,
     GainSet(f32),
-    LpfBeginSet,
-    LpfEndSet,
     LpfSet(f32),
 }
 
@@ -84,32 +79,14 @@ impl Model for UiData {
                     setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
             }
-            ParamChangeEvent::MixBeginSet => {
-                setter.begin_set_parameter(&self.params.mix);
-            }
             ParamChangeEvent::MixSet(f) => {
                 setter.set_parameter(&self.params.mix, *f);
-            }
-            ParamChangeEvent::MixEndSet => {
-                setter.end_set_parameter(&self.params.mix);
-            }
-            ParamChangeEvent::GainBeginSet => {
-                setter.begin_set_parameter(&self.params.gain);
             }
             ParamChangeEvent::GainSet(f) => {
                 setter.set_parameter(&self.params.gain, *f);
             }
-            ParamChangeEvent::GainEndSet => {
-                setter.end_set_parameter(&self.params.gain);
-            }
-            ParamChangeEvent::LpfBeginSet => {
-                setter.begin_set_parameter(&self.params.lpf_fc);
-            }
             ParamChangeEvent::LpfSet(f) => {
                 setter.set_parameter(&self.params.lpf_fc, *f);
-            }
-            ParamChangeEvent::LpfEndSet => {
-                setter.end_set_parameter(&self.params.lpf_fc);
             }
         });
     }
@@ -183,58 +160,40 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
     .child_space(Stretch(1.0))
 }
 
-fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "Gain");
-        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.gain.value()), false)
-            .on_changing(move |cx, val| {
-                cx.emit(ParamChangeEvent::GainSet(val));
-            })
-            .on_press(move |cx| {
-                cx.emit(ParamChangeEvent::GainBeginSet);
-            })
-            .on_mouse_up(move |cx, _button| {
-                cx.emit(ParamChangeEvent::GainEndSet);
-            });
-        Label::new(cx, UiData::params.map(|p| p.gain.to_string()));
-    })
-    .class("gain-container")
+fn create_gain_block(cx: &mut Context) -> Handle<KnobContainer> {
+    KnobContainer::new(
+        cx,
+        "Gain".to_string(),
+        UiData::params.map(|p| p.gain.value()),
+        UiData::params.map(|p| p.gain.to_string()),
+        move |cx, val| {
+            cx.emit(ParamChangeEvent::GainSet(val));
+        }
+    )
 }
 
-fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "Mix");
-        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.mix.value()), false)
-            .on_changing(move |cx, val| {
-                cx.emit(ParamChangeEvent::MixSet(val));
-            })
-            .on_press(move |cx| {
-                cx.emit(ParamChangeEvent::MixBeginSet);
-            })
-            .on_mouse_up(move |cx, _button| {
-                cx.emit(ParamChangeEvent::MixEndSet);
-            });
-        Label::new(cx, UiData::params.map(|p| p.mix.to_string()));
-    })
-    .class("mix-container")
+fn create_mix_block(cx: &mut Context) -> Handle<KnobContainer> {
+    KnobContainer::new(
+        cx,
+        "Mix".to_string(),
+        UiData::params.map(|p| p.mix.value()),
+        UiData::params.map(|p| p.mix.to_string()),
+        move |cx, val| {
+            cx.emit(ParamChangeEvent::MixSet(val));
+        }
+    )
 }
 
-fn create_lpf_block(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "LPF");
-        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.lpf_fc.value()), false)
-            .on_changing(move |cx, val| {
-                cx.emit(ParamChangeEvent::LpfSet(val));
-            })
-            .on_press(move |cx| {
-                cx.emit(ParamChangeEvent::LpfBeginSet);
-            })
-            .on_mouse_up(move |cx, _button| {
-                cx.emit(ParamChangeEvent::LpfEndSet);
-            });
-        Label::new(cx, UiData::params.map(|p| p.lpf_fc.to_string()));
-    })
-    .class("lpf-container")
+fn create_lpf_block(cx: &mut Context) -> Handle<KnobContainer> {
+    KnobContainer::new(
+        cx,
+        "LPF".to_string(),
+        UiData::params.map(|p| p.lpf_fc.value()),
+        UiData::params.map(|p| p.lpf_fc.to_string()),
+        move |cx, val| {
+            cx.emit(ParamChangeEvent::LpfSet(val));
+        }
+    )
 }
 
 fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {

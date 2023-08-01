@@ -44,9 +44,14 @@
     width: 100%;
 }
 
+knob-vstack {
+    child-space: 1s;
+    font-size: medium;
+}
+
 .knob-container {
     child-space: 1s;
-    col-between: 40%;
+    col-between: 30%;
 }
 
 knob {
@@ -56,19 +61,4 @@ knob {
 
 knob .track {
     background-color: #1eaf75;
-}
-
-.gain-container {
-    child-space: 1s;
-    font-size: medium;
-}
-
-.mix-container {
-    child-space: 1s;
-    font-size: medium;
-}
-
-.lpf-container {
-    child-space: 1s;
-    font-size: medium;
 }
