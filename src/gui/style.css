@@ -44,11 +44,6 @@
     width: 100%;
 }
 
-knob-vstack {
-    child-space: 1s;
-    font-size: medium;
-}
-
 .knob-container {
     child-space: 1s;
     col-between: 30%;

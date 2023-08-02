@@ -31,7 +31,8 @@ impl KnobContainer {
                 )
                 .on_changing(on_change_callback);
                 Label::new(cx, value_lens);
-            });
+            })
+            .child_space(Stretch(1.0));
 
         })
     }
