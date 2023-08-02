@@ -33,7 +33,6 @@ impl KnobContainer {
                 Label::new(cx, value_lens);
             })
             .child_space(Stretch(1.0));
-
         })
     }
 }

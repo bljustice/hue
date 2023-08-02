@@ -84,20 +84,27 @@ impl Plugin for noise::Noise {
         let mix_level = self.params.mix.smoothed.next();
         let sr = self.sample_rate.load(Ordering::Relaxed);
         
-        // update lowpass filter coefficients only if needed
+        // update lowpass and highpass filter coefficients only if needed
         if self
             .should_update_filter
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
             .is_ok()
         {
             let lpf_fc = self.params.lpf_fc.smoothed.next();
+            let hpf_fc = self.params.hpf_fc.smoothed.next();
             self.lpf.coefficients.update(lpf_fc, sr, FilterType::Lowpass);
+            self.hpf.coefficients.update(hpf_fc, sr, FilterType::Highpass);
         }
 
         for channel_samples in buffer.iter_samples() {
             if self.params.lpf_fc.smoothed.is_smoothing() {
                 let lpf_fc = self.params.lpf_fc.smoothed.next();
                 self.lpf.coefficients.update(lpf_fc, sr, FilterType::Lowpass);
+            }
+
+            if self.params.hpf_fc.smoothed.is_smoothing() {
+                let hpf_fc = self.params.hpf_fc.smoothed.next();
+                self.hpf.coefficients.update(hpf_fc, sr, FilterType::Highpass);
             }
             
             let noise_sample = match self.params.noise_type.value() {
@@ -115,7 +122,10 @@ impl Plugin for noise::Noise {
                 .next(&self.params.white_noise_distribution.value(), &mut self.rng),
             };
         
-            let final_sample = self.lpf.process(noise_sample) * gain * mix_level;
+            let lp_sample = self.lpf.process(noise_sample);
+            let hp_sample = self.hpf.process(lp_sample);
+            let final_sample = hp_sample * gain * mix_level;
+
             for sample in channel_samples {
                 *sample = final_sample + (*sample * (1.0 - mix_level));
                 

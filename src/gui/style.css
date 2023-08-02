@@ -46,7 +46,7 @@
 
 .knob-container {
     child-space: 1s;
-    col-between: 30%;
+    col-between: 20%;
 }
 
 knob {

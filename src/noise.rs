@@ -24,6 +24,7 @@ pub struct Noise {
     pub spectrum: Spectrum,
     pub spectrum_output_buffer: gui::analyzer::SpectrumBuffer,
     pub lpf: Biquad,
+    pub hpf: Biquad,
     pub should_update_filter: Arc<AtomicBool>,
 }
 
@@ -47,6 +48,7 @@ impl Default for Noise {
             spectrum,
             spectrum_output_buffer,
             lpf: Default::default(),
+            hpf: Default::default(),
             should_update_filter: Arc::new(AtomicBool::new(false)),
         }
     }
