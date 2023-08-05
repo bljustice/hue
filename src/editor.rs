@@ -1,6 +1,6 @@
 use atomic_float::AtomicF32;
 use nih_plug::context::gui::{GuiContext, ParamSetter};
-use nih_plug::prelude::Editor;
+use nih_plug::prelude::{Editor, Param};
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
@@ -79,27 +79,27 @@ impl Model for UiData {
                     );
                     setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
-            }
+            },
             ParamChangeEvent::MixSet(f) => {
                 setter.begin_set_parameter(&self.params.mix);
                 setter.set_parameter(&self.params.mix, *f);
                 setter.end_set_parameter(&self.params.mix);
-            }
+            },
             ParamChangeEvent::GainSet(f) => {
                 setter.begin_set_parameter(&self.params.gain);
                 setter.set_parameter(&self.params.gain, *f);
                 setter.end_set_parameter(&self.params.gain);
-            }
+            },
             ParamChangeEvent::LpfSet(f) => {
                 setter.begin_set_parameter(&self.params.lpf_fc);
                 setter.set_parameter_normalized(&self.params.lpf_fc, *f);
                 setter.end_set_parameter(&self.params.lpf_fc);
-            }
+            },
             ParamChangeEvent::HpfSet(f) => {
                 setter.begin_set_parameter(&self.params.hpf_fc);
                 setter.set_parameter_normalized(&self.params.hpf_fc, *f);
                 setter.end_set_parameter(&self.params.hpf_fc);
-            }
+            },
         });
     }
 }
@@ -200,7 +200,7 @@ fn create_lpf_block(cx: &mut Context) -> Handle<KnobContainer> {
     KnobContainer::new(
         cx,
         "LPF".to_string(),
-        UiData::params.map(|p| p.lpf_fc.value()),
+        UiData::params.map(|p| p.lpf_fc.unmodulated_normalized_value()),
         UiData::params.map(|p| p.lpf_fc.to_string()),
         move |cx, val| {
             cx.emit(ParamChangeEvent::LpfSet(val));
@@ -212,11 +212,11 @@ fn create_hpf_block(cx: &mut Context) -> Handle<KnobContainer> {
     KnobContainer::new(
         cx,
         "HPF".to_string(),
-        UiData::params.map(|p| p.hpf_fc.value()),
+        UiData::params.map(|p| p.hpf_fc.unmodulated_normalized_value()),
         UiData::params.map(|p| p.hpf_fc.to_string()),
-        move |cx, val| {
+        |cx, val| {
             cx.emit(ParamChangeEvent::HpfSet(val));
-        }
+        },
     )
 }
 

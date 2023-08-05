@@ -12,7 +12,13 @@ impl View for KnobContainer {
 }
 
 impl KnobContainer {
-    pub fn new<L,V,F>(cx: &mut Context, label: String, lens: L, value_lens: V, on_change_callback: F) -> Handle<Self>
+    pub fn new<L,V,F>(
+        cx: &mut Context,
+        label: String,
+        lens: L,
+        value_lens: V,
+        on_change_callback: F,
+    ) -> Handle<Self>
     where
         L : Lens<Target=f32>,
         V : Lens<Target=String>,

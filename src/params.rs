@@ -30,15 +30,15 @@ pub struct NoiseParams {
     pub editor_state: Arc<ViziaState>,
     #[id = "gain"]
     pub gain: FloatParam,
-    #[id = "noise type"]
+    #[id = "noise-type"]
     pub noise_type: EnumParam<NoiseType>,
-    #[id = "white noise distribution"]
+    #[id = "white-noise-distribution"]
     pub white_noise_distribution: EnumParam<WhiteNoiseDistribution>,
     #[id = "mix"]
     pub mix: FloatParam,
-    #[id = "highpass frequency cutoff"]
+    #[id = "highpass-frequency-cutoff"]
     pub hpf_fc: FloatParam,
-    #[id = "lowpass frequency cutoff"]
+    #[id = "lowpass-frequency-cutoff"]
     pub lpf_fc: FloatParam,
 }
 
@@ -71,14 +71,14 @@ impl NoiseParams {
                 .with_string_to_value(formatters::s2v_f32_percentage()),
             hpf_fc: FloatParam::new(
                 "Highpass Freq Cutoff",
-                5.0,
+                5.,
                 FloatRange::Skewed {
                     min: 5.,
                     max: 5_000.,
-                    factor: FloatRange::skew_factor(1.0),
+                    factor: FloatRange::skew_factor(-1.0),
                 }
             )
-            .with_smoother(SmoothingStyle::Logarithmic(5.0))
+            .with_smoother(SmoothingStyle::Logarithmic(100.0))
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))
             .with_string_to_value(formatters::s2v_f32_hz_then_khz())
             .with_callback({
@@ -87,14 +87,14 @@ impl NoiseParams {
             }),
             lpf_fc: FloatParam::new(
                 "Lowpass Freq Cutoff",
-                15_000.,
+                20_000.,
                 FloatRange::Skewed {
                     min: 5_000.,
                     max: 20_000.,
                     factor: FloatRange::skew_factor(1.0),
                 }
             )
-            .with_smoother(SmoothingStyle::Logarithmic(5.0))
+            .with_smoother(SmoothingStyle::Logarithmic(100.0))
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))
             .with_string_to_value(formatters::s2v_f32_hz_then_khz())
             .with_callback({
