@@ -46,7 +46,7 @@
 
 .knob-container {
     child-space: 1s;
-    col-between: 40%;
+    col-between: 20%;
 }
 
 knob {
@@ -56,14 +56,4 @@ knob {
 
 knob .track {
     background-color: #1eaf75;
-}
-
-.gain-container {
-    child-space: 1s;
-    font-size: medium;
-}
-
-.mix-container {
-    child-space: 1s;
-    font-size: medium;
 }

@@ -2,7 +2,10 @@ use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use crate::editor;
 
@@ -28,22 +31,22 @@ pub enum WhiteNoiseDistribution {
 pub struct NoiseParams {
     #[persist = "editor-state"]
     pub editor_state: Arc<ViziaState>,
-
     #[id = "gain"]
     pub gain: FloatParam,
-
-    #[id = "noise type"]
+    #[id = "noise-type"]
     pub noise_type: EnumParam<NoiseType>,
-
-    #[id = "white noise distribution"]
+    #[id = "white-noise-distribution"]
     pub white_noise_distribution: EnumParam<WhiteNoiseDistribution>,
-
     #[id = "mix"]
     pub mix: FloatParam,
+    #[id = "highpass-frequency-cutoff"]
+    pub hpf_fc: FloatParam,
+    #[id = "lowpass-frequency-cutoff"]
+    pub lpf_fc: FloatParam,
 }
 
-impl Default for NoiseParams {
-    fn default() -> Self {
+impl NoiseParams {
+    pub fn new(should_update_filters: Arc<AtomicBool>) -> Self {
         Self {
             editor_state: editor::default_state(),
             gain: FloatParam::new(
@@ -69,6 +72,38 @@ impl Default for NoiseParams {
                 .with_smoother(SmoothingStyle::Linear(10.0))
                 .with_value_to_string(formatters::v2s_f32_percentage(0))
                 .with_string_to_value(formatters::s2v_f32_percentage()),
+            hpf_fc: FloatParam::new(
+                "Highpass Freq Cutoff",
+                5.,
+                FloatRange::Skewed {
+                    min: 5.,
+                    max: 5_000.,
+                    factor: FloatRange::skew_factor(-1.0),
+                },
+            )
+            .with_smoother(SmoothingStyle::Logarithmic(100.0))
+            .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))
+            .with_string_to_value(formatters::s2v_f32_hz_then_khz())
+            .with_callback({
+                let should_update_filters = should_update_filters.clone();
+                Arc::new(move |_| should_update_filters.store(true, Ordering::Relaxed))
+            }),
+            lpf_fc: FloatParam::new(
+                "Lowpass Freq Cutoff",
+                20_000.,
+                FloatRange::Skewed {
+                    min: 5_000.,
+                    max: 20_000.,
+                    factor: FloatRange::skew_factor(1.0),
+                },
+            )
+            .with_smoother(SmoothingStyle::Logarithmic(100.0))
+            .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))
+            .with_string_to_value(formatters::s2v_f32_hz_then_khz())
+            .with_callback({
+                let should_update_filters = should_update_filters.clone();
+                Arc::new(move |_| should_update_filters.store(true, Ordering::Relaxed))
+            }),
         }
     }
 }

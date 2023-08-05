@@ -28,17 +28,15 @@ impl Default for Debug {
 
 impl Debug {
     pub fn update(&mut self, sample_value: f32, sample_rate: f32, mix_level: f32, gain_level: f32) {
-        if cfg!(debug_assertions) {
-            self.current_sample_val.store(sample_value, Relaxed);
-            self.sample_rate.store(sample_rate, Relaxed);
-            self.mix.store(mix_level, Relaxed);
-            self.gain.store(gain_level, Relaxed);
+        self.current_sample_val.store(sample_value, Relaxed);
+        self.sample_rate.store(sample_rate, Relaxed);
+        self.mix.store(mix_level, Relaxed);
+        self.gain.store(gain_level, Relaxed);
 
-            if sample_value > self.max_sample_val.load(Relaxed) {
-                self.max_sample_val.store(sample_value, Relaxed);
-            } else if sample_value < self.min_sample_val.load(Relaxed) {
-                self.min_sample_val.store(sample_value, Relaxed);
-            }
+        if sample_value > self.max_sample_val.load(Relaxed) {
+            self.max_sample_val.store(sample_value, Relaxed);
+        } else if sample_value < self.min_sample_val.load(Relaxed) {
+            self.min_sample_val.store(sample_value, Relaxed);
         }
     }
 }

@@ -1,9 +1,10 @@
 use atomic_float::AtomicF32;
 use std::{
     mem,
-    sync::{Arc, Mutex},
+    sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
+use crate::filters::biquad::Biquad;
 use crate::gui;
 use crate::params::NoiseParams;
 use crate::spectrum::Spectrum;
@@ -22,6 +23,9 @@ pub struct Noise {
     pub sample_rate: Arc<AtomicF32>,
     pub spectrum: Spectrum,
     pub spectrum_output_buffer: gui::analyzer::SpectrumBuffer,
+    pub lpf: Biquad,
+    pub hpf: Biquad,
+    pub should_update_filter: Arc<AtomicBool>,
 }
 
 impl Default for Noise {
@@ -30,8 +34,10 @@ impl Default for Noise {
         let spectrum_output_buffer = Arc::new(Mutex::new(spectrum_out));
         let sample_rate = Arc::new(AtomicF32::new(44.1e3));
 
+        let should_update_filter = Arc::new(AtomicBool::new(true));
+
         Self {
-            params: Arc::new(NoiseParams::default()),
+            params: Arc::new(NoiseParams::new(should_update_filter)),
             rng: StdRng::from_entropy(),
             white: White::new(),
             pink: Pink::new(),
@@ -41,6 +47,9 @@ impl Default for Noise {
             sample_rate,
             spectrum,
             spectrum_output_buffer,
+            lpf: Default::default(),
+            hpf: Default::default(),
+            should_update_filter: Arc::new(AtomicBool::new(false)),
         }
     }
 }

@@ -1,6 +1,6 @@
 use atomic_float::AtomicF32;
 use nih_plug::context::gui::{GuiContext, ParamSetter};
-use nih_plug::prelude::Editor;
+use nih_plug::prelude::{Editor, Param};
 use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
@@ -10,6 +10,7 @@ use std::sync::{atomic::Ordering::Relaxed, Arc};
 use crate::config;
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::gui::debug::DebugContainer;
+use crate::gui::knob::KnobContainer;
 use crate::params::{NoiseParams, NoiseType, WhiteNoiseDistribution};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -33,12 +34,10 @@ struct UiData {
 pub enum ParamChangeEvent {
     NoiseEvent(String),
     WhiteNoiseDistributionEvent(String),
-    MixBeginSet,
-    MixEndSet,
     MixSet(f32),
-    GainBeginSet,
-    GainEndSet,
     GainSet(f32),
+    LpfSet(f32),
+    HpfSet(f32),
 }
 
 impl Model for UiData {
@@ -81,23 +80,25 @@ impl Model for UiData {
                     setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
             }
-            ParamChangeEvent::MixBeginSet => {
-                setter.begin_set_parameter(&self.params.mix);
-            }
             ParamChangeEvent::MixSet(f) => {
+                setter.begin_set_parameter(&self.params.mix);
                 setter.set_parameter(&self.params.mix, *f);
-            }
-            ParamChangeEvent::MixEndSet => {
                 setter.end_set_parameter(&self.params.mix);
             }
-            ParamChangeEvent::GainBeginSet => {
-                setter.begin_set_parameter(&self.params.gain);
-            }
             ParamChangeEvent::GainSet(f) => {
+                setter.begin_set_parameter(&self.params.gain);
                 setter.set_parameter(&self.params.gain, *f);
-            }
-            ParamChangeEvent::GainEndSet => {
                 setter.end_set_parameter(&self.params.gain);
+            }
+            ParamChangeEvent::LpfSet(f) => {
+                setter.begin_set_parameter(&self.params.lpf_fc);
+                setter.set_parameter_normalized(&self.params.lpf_fc, *f);
+                setter.end_set_parameter(&self.params.lpf_fc);
+            }
+            ParamChangeEvent::HpfSet(f) => {
+                setter.begin_set_parameter(&self.params.hpf_fc);
+                setter.set_parameter_normalized(&self.params.hpf_fc, *f);
+                setter.end_set_parameter(&self.params.hpf_fc);
             }
         });
     }
@@ -171,40 +172,52 @@ fn create_title_block(cx: &mut Context) -> Handle<VStack> {
     .child_space(Stretch(1.0))
 }
 
-fn create_gain_block(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "Gain");
-        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.gain.value()), false)
-            .on_changing(move |cx, val| {
-                cx.emit(ParamChangeEvent::GainSet(val));
-            })
-            .on_press(move |cx| {
-                cx.emit(ParamChangeEvent::GainBeginSet);
-            })
-            .on_mouse_up(move |cx, _button| {
-                cx.emit(ParamChangeEvent::GainEndSet);
-            });
-        Label::new(cx, UiData::params.map(|p| p.gain.to_string()));
-    })
-    .class("gain-container")
+fn create_gain_block(cx: &mut Context) -> Handle<KnobContainer> {
+    KnobContainer::new(
+        cx,
+        "Gain".to_string(),
+        UiData::params.map(|p| p.gain.value()),
+        UiData::params.map(|p| p.gain.to_string()),
+        move |cx, val| {
+            cx.emit(ParamChangeEvent::GainSet(val));
+        },
+    )
 }
 
-fn create_mix_block(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "Mix");
-        views::Knob::new(cx, 0.5, UiData::params.map(|p| p.mix.value()), false)
-            .on_changing(move |cx, val| {
-                cx.emit(ParamChangeEvent::MixSet(val));
-            })
-            .on_press(move |cx| {
-                cx.emit(ParamChangeEvent::MixBeginSet);
-            })
-            .on_mouse_up(move |cx, _button| {
-                cx.emit(ParamChangeEvent::MixEndSet);
-            });
-        Label::new(cx, UiData::params.map(|p| p.mix.to_string()));
-    })
-    .class("mix-container")
+fn create_mix_block(cx: &mut Context) -> Handle<KnobContainer> {
+    KnobContainer::new(
+        cx,
+        "Mix".to_string(),
+        UiData::params.map(|p| p.mix.value()),
+        UiData::params.map(|p| p.mix.to_string()),
+        move |cx, val| {
+            cx.emit(ParamChangeEvent::MixSet(val));
+        },
+    )
+}
+
+fn create_lpf_block(cx: &mut Context) -> Handle<KnobContainer> {
+    KnobContainer::new(
+        cx,
+        "LPF".to_string(),
+        UiData::params.map(|p| p.lpf_fc.unmodulated_normalized_value()),
+        UiData::params.map(|p| p.lpf_fc.to_string()),
+        move |cx, val| {
+            cx.emit(ParamChangeEvent::LpfSet(val));
+        },
+    )
+}
+
+fn create_hpf_block(cx: &mut Context) -> Handle<KnobContainer> {
+    KnobContainer::new(
+        cx,
+        "HPF".to_string(),
+        UiData::params.map(|p| p.hpf_fc.unmodulated_normalized_value()),
+        UiData::params.map(|p| p.hpf_fc.to_string()),
+        |cx, val| {
+            cx.emit(ParamChangeEvent::HpfSet(val));
+        },
+    )
 }
 
 fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
@@ -348,6 +361,8 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
         HStack::new(cx, move |cx| {
             create_gain_block(cx);
             create_mix_block(cx);
+            create_hpf_block(cx);
+            create_lpf_block(cx);
         })
         .class("knob-container");
         create_noise_selector_row(cx);
