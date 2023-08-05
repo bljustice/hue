@@ -1,7 +1,7 @@
 use atomic_float::AtomicF32;
 use std::{
     mem,
-    sync::{Arc, Mutex, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
 use crate::filters::biquad::Biquad;

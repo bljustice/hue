@@ -79,27 +79,27 @@ impl Model for UiData {
                     );
                     setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
-            },
+            }
             ParamChangeEvent::MixSet(f) => {
                 setter.begin_set_parameter(&self.params.mix);
                 setter.set_parameter(&self.params.mix, *f);
                 setter.end_set_parameter(&self.params.mix);
-            },
+            }
             ParamChangeEvent::GainSet(f) => {
                 setter.begin_set_parameter(&self.params.gain);
                 setter.set_parameter(&self.params.gain, *f);
                 setter.end_set_parameter(&self.params.gain);
-            },
+            }
             ParamChangeEvent::LpfSet(f) => {
                 setter.begin_set_parameter(&self.params.lpf_fc);
                 setter.set_parameter_normalized(&self.params.lpf_fc, *f);
                 setter.end_set_parameter(&self.params.lpf_fc);
-            },
+            }
             ParamChangeEvent::HpfSet(f) => {
                 setter.begin_set_parameter(&self.params.hpf_fc);
                 setter.set_parameter_normalized(&self.params.hpf_fc, *f);
                 setter.end_set_parameter(&self.params.hpf_fc);
-            },
+            }
         });
     }
 }
@@ -180,7 +180,7 @@ fn create_gain_block(cx: &mut Context) -> Handle<KnobContainer> {
         UiData::params.map(|p| p.gain.to_string()),
         move |cx, val| {
             cx.emit(ParamChangeEvent::GainSet(val));
-        }
+        },
     )
 }
 
@@ -192,7 +192,7 @@ fn create_mix_block(cx: &mut Context) -> Handle<KnobContainer> {
         UiData::params.map(|p| p.mix.to_string()),
         move |cx, val| {
             cx.emit(ParamChangeEvent::MixSet(val));
-        }
+        },
     )
 }
 
@@ -204,7 +204,7 @@ fn create_lpf_block(cx: &mut Context) -> Handle<KnobContainer> {
         UiData::params.map(|p| p.lpf_fc.to_string()),
         move |cx, val| {
             cx.emit(ParamChangeEvent::LpfSet(val));
-        }
+        },
     )
 }
 

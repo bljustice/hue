@@ -2,7 +2,10 @@ use nih_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
-use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 use crate::editor;
 
@@ -76,7 +79,7 @@ impl NoiseParams {
                     min: 5.,
                     max: 5_000.,
                     factor: FloatRange::skew_factor(-1.0),
-                }
+                },
             )
             .with_smoother(SmoothingStyle::Logarithmic(100.0))
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))
@@ -92,7 +95,7 @@ impl NoiseParams {
                     min: 5_000.,
                     max: 20_000.,
                     factor: FloatRange::skew_factor(1.0),
-                }
+                },
             )
             .with_smoother(SmoothingStyle::Logarithmic(100.0))
             .with_value_to_string(formatters::v2s_f32_hz_then_khz(0))

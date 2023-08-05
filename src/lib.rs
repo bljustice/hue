@@ -4,9 +4,9 @@ use noise::NoiseConfig;
 use params::NoiseType;
 use std::sync::{atomic::Ordering, Arc};
 
-mod filters;
 mod config;
 mod editor;
+mod filters;
 mod gui;
 mod noise;
 mod params;
@@ -79,11 +79,10 @@ impl Plugin for noise::Noise {
         _aux: &mut AuxiliaryBuffers,
         _context: &mut impl ProcessContext<Self>,
     ) -> ProcessStatus {
-
         let gain = self.params.gain.smoothed.next();
         let mix_level = self.params.mix.smoothed.next();
         let sr = self.sample_rate.load(Ordering::Relaxed);
-        
+
         // update lowpass and highpass filter coefficients only if needed
         if self
             .should_update_filter
@@ -92,50 +91,53 @@ impl Plugin for noise::Noise {
         {
             let lpf_fc = self.params.lpf_fc.smoothed.next();
             let hpf_fc = self.params.hpf_fc.smoothed.next();
-            self.lpf.coefficients.update(lpf_fc, sr, FilterType::Lowpass);
-            self.hpf.coefficients.update(hpf_fc, sr, FilterType::Highpass);
+            self.lpf
+                .coefficients
+                .update(lpf_fc, sr, FilterType::Lowpass);
+            self.hpf
+                .coefficients
+                .update(hpf_fc, sr, FilterType::Highpass);
         }
 
         for channel_samples in buffer.iter_samples() {
             if self.params.lpf_fc.smoothed.is_smoothing() {
                 let lpf_fc = self.params.lpf_fc.smoothed.next();
-                self.lpf.coefficients.update(lpf_fc, sr, FilterType::Lowpass);
+                self.lpf
+                    .coefficients
+                    .update(lpf_fc, sr, FilterType::Lowpass);
             }
 
             if self.params.hpf_fc.smoothed.is_smoothing() {
                 let hpf_fc = self.params.hpf_fc.smoothed.next();
-                self.hpf.coefficients.update(hpf_fc, sr, FilterType::Highpass);
+                self.hpf
+                    .coefficients
+                    .update(hpf_fc, sr, FilterType::Highpass);
             }
-            
+
             let noise_sample = match self.params.noise_type.value() {
                 NoiseType::White => self
-                .white
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                    .white
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
                 NoiseType::Pink => self
-                .pink
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                    .pink
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
                 NoiseType::Brown => self
-                .brown
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                    .brown
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
                 NoiseType::Violet => self
-                .violet
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+                    .violet
+                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
             };
-        
+
             let lp_sample = self.lpf.process(noise_sample);
             let hp_sample = self.hpf.process(lp_sample);
             let final_sample = hp_sample * gain * mix_level;
 
             for sample in channel_samples {
                 *sample = final_sample + (*sample * (1.0 - mix_level));
-                
+
                 if cfg!(debug_assertions) {
-                    self.debug.update(
-                        *sample,
-                        sr,
-                        mix_level,
-                        gain,
-                    );
+                    self.debug.update(*sample, sr, mix_level, gain);
                 }
             }
         }
