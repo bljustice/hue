@@ -6,6 +6,7 @@ use std::sync::{atomic::Ordering, Arc};
 
 mod config;
 mod editor;
+mod envelope;
 mod filters;
 mod gui;
 mod noise;
@@ -134,7 +135,8 @@ impl Plugin for noise::Noise {
             let final_sample = hp_sample * gain * mix_level;
 
             for sample in channel_samples {
-                *sample = final_sample + (*sample * (1.0 - mix_level));
+                let rms_level = self.envelope_follower.process(*sample, self.params.env_mode.value());
+                *sample = (rms_level * final_sample) + (*sample * (1.0 - mix_level));
 
                 if cfg!(debug_assertions) {
                     self.debug.update(*sample, sr, mix_level, gain);

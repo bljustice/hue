@@ -1,5 +1,5 @@
 use nih_plug::prelude::{
-    formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
+    formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle
 };
 use nih_plug_vizia::ViziaState;
 use std::sync::{
@@ -7,7 +7,7 @@ use std::sync::{
     Arc,
 };
 
-use crate::editor;
+use crate::{editor, envelope};
 
 #[derive(Enum, PartialEq, Debug)]
 pub enum NoiseType {
@@ -43,6 +43,8 @@ pub struct NoiseParams {
     pub hpf_fc: FloatParam,
     #[id = "lowpass-frequency-cutoff"]
     pub lpf_fc: FloatParam,
+    #[id = "envelope-mode"]
+    pub env_mode: EnumParam<envelope::follower::EnvelopeMode>,
 }
 
 impl NoiseParams {
@@ -104,6 +106,10 @@ impl NoiseParams {
                 let should_update_filters = should_update_filters.clone();
                 Arc::new(move |_| should_update_filters.store(true, Ordering::Relaxed))
             }),
+            env_mode: EnumParam::new(
+                "Envelope Mode",
+                envelope::follower::EnvelopeMode::Follow,
+            )
         }
     }
 }

@@ -5,9 +5,10 @@ use nih_plug_vizia::vizia::style::Color;
 use nih_plug_vizia::vizia::{prelude::*, views};
 use nih_plug_vizia::widgets::*;
 use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
+use std::env;
 use std::sync::{atomic::Ordering::Relaxed, Arc};
 
-use crate::config;
+use crate::{config, envelope};
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::gui::debug::DebugContainer;
 use crate::gui::knob::KnobContainer;
@@ -25,6 +26,7 @@ struct UiData {
     params: Arc<NoiseParams>,
     noise_types: Vec<String>,
     white_noise_types: Vec<String>,
+    envelope_mode_types: Vec<String>,
     debug: config::Debug,
     sample_rate: Arc<AtomicF32>,
     spectrum_buffer: SpectrumBuffer,
@@ -38,6 +40,7 @@ pub enum ParamChangeEvent {
     GainSet(f32),
     LpfSet(f32),
     HpfSet(f32),
+    EnvelopeModeEvent(String),
 }
 
 impl Model for UiData {
@@ -99,6 +102,17 @@ impl Model for UiData {
                 setter.begin_set_parameter(&self.params.hpf_fc);
                 setter.set_parameter_normalized(&self.params.hpf_fc, *f);
                 setter.end_set_parameter(&self.params.hpf_fc);
+            },
+            ParamChangeEvent::EnvelopeModeEvent(s) => {
+                if s == "follow" {
+                    setter.begin_set_parameter(&self.params.env_mode);
+                    setter.set_parameter(&self.params.env_mode, envelope::follower::EnvelopeMode::Follow);
+                    setter.end_set_parameter(&self.params.env_mode);
+                } else if s == "continuous" {
+                    setter.begin_set_parameter(&self.params.env_mode);
+                    setter.set_parameter(&self.params.env_mode, envelope::follower::EnvelopeMode::Continuous);
+                    setter.end_set_parameter(&self.params.env_mode);
+                }
             }
         });
     }
@@ -130,6 +144,7 @@ pub(crate) fn create(
                 "violet".to_string(),
             ],
             white_noise_types: vec!["normal".to_string(), "uniform".to_string()],
+            envelope_mode_types: vec!["follow".to_string(), "continuous".to_string()],
             sample_rate: sample_rate.clone(),
             spectrum_buffer: spectrum_buffer.clone(),
         }
@@ -335,18 +350,68 @@ fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
     .class("noise-dropdown-container")
 }
 
+fn create_envelope_mode_block(cx: &mut Context) -> Handle<VStack> {
+    VStack::new(cx, |cx| {
+        Label::new(cx, "Envelope Mode")
+            .font_size(15.0 * POINT_SCALE)
+            .class("dropdown-label");
+        Dropdown::new(
+            cx,
+            move |cx| {
+                VStack::new(cx, move |cx| {
+                    Label::new(cx, UiData::params.map(|p| p.env_mode.to_string()));
+                    Label::new(cx, ICON_DOWN_OPEN).class("arrow");
+                })
+                .class("title")
+                .child_space(Stretch(1.0))
+            },
+            move |cx| {
+                List::new(cx, UiData::envelope_mode_types, move |cx, _idx, item| {
+                    VStack::new(cx, move |cx| {
+                        Binding::new(
+                            cx,
+                            UiData::params.map(|p| p.env_mode.to_string()),
+                            move |cx, choice| {
+                                let selected = *item.get(cx) == *choice.get(cx);
+                                Label::new(cx, &item.get(cx))
+                                    .background_color(if selected {
+                                        Color::from("#c28919")
+                                    } else {
+                                        Color::transparent()
+                                    })
+                                    .on_press(move |cx| {
+                                        cx.emit(ParamChangeEvent::EnvelopeModeEvent(item.get(cx)));
+                                        cx.emit(views::PopupEvent::Close);
+                                    })
+                                    .child_space(Stretch(1.0))
+                                    .class("dropdown-label-value");
+                            },
+                        );
+                    });
+                });
+            },
+        )
+        .width(Percentage(90.0))
+        .class("noise-dropdown");
+    })
+    .child_space(Stretch(1.0))
+    .class("noise-dropdown-container")
+}
+
 fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
     if cfg!(debug_assertions) {
         return HStack::new(cx, move |cx| {
             create_noise_selector(cx);
             create_white_noise_selector(cx);
+            create_envelope_mode_block(cx);
         })
         .class("all-dropdowns-container")
         .child_space(Stretch(1.0));
-    } else {
-        return HStack::new(cx, move |cx| {
+} else {
+    return HStack::new(cx, move |cx| {
             create_noise_selector(cx);
             create_white_noise_selector(cx);
+            create_envelope_mode_block(cx);
         })
         .class("all-dropdowns-container")
         .child_space(Stretch(1.0))

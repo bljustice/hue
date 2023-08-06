@@ -4,6 +4,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
+use crate::envelope::follower::EnvelopeFollower;
 use crate::filters::biquad::Biquad;
 use crate::gui;
 use crate::params::NoiseParams;
@@ -26,6 +27,7 @@ pub struct Noise {
     pub lpf: Biquad,
     pub hpf: Biquad,
     pub should_update_filter: Arc<AtomicBool>,
+    pub envelope_follower: EnvelopeFollower,
 }
 
 impl Default for Noise {
@@ -50,6 +52,7 @@ impl Default for Noise {
             lpf: Default::default(),
             hpf: Default::default(),
             should_update_filter: Arc::new(AtomicBool::new(false)),
+            envelope_follower: EnvelopeFollower::new(),
         }
     }
 }
