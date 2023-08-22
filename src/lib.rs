@@ -115,31 +115,11 @@ impl Plugin for noise::Noise {
                     .update(hpf_fc, sr, FilterType::Highpass);
             }
 
-            let noise_sample = match self.params.noise_type.value() {
-                NoiseType::White => self
-                    .white
-                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
-                NoiseType::Pink => self
-                    .pink
-                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
-                NoiseType::Brown => self
-                    .brown
-                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
-                NoiseType::Violet => self
-                    .violet
-                    .next(&self.params.white_noise_distribution.value(), &mut self.rng),
-            };
-
-            let lp_sample = self.lpf.process(noise_sample);
-            let hp_sample = self.hpf.process(lp_sample);
-            let final_sample = hp_sample * gain * mix_level;
-
             for sample in channel_samples {
-                let rms_level = self.envelope_follower.process(*sample, self.params.env_mode.value());
-                *sample = (rms_level * final_sample) + (*sample * (1.0 - mix_level));
+                *sample = self.process(*sample);
 
                 if cfg!(debug_assertions) {
-                    self.debug.update(*sample, sr, mix_level, gain);
+                    self.debug.update(*sample, sr, mix_level, gain, self.envelope_follower.process(*sample));
                 }
             }
         }

@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use nih_plug::prelude::Enum;
 
 #[derive(Enum, PartialEq, Debug)]
@@ -6,31 +8,38 @@ pub enum EnvelopeMode {
     Follow,
 }
 
-/// creates an RMS envelope follower to follow the input audio's volume
-/// so the noise being played doesn't play when no input audio comes through
 pub struct EnvelopeFollower {
-    sum_squared: f32,
-    num_samples: usize,
+    envelope_value: f32,
+    attack_coefficient: f32,
+    release_coefficient: f32,
 }
 
 impl EnvelopeFollower {
-    pub fn new() -> Self {
+
+    pub fn new(sample_rate: &f32) -> Self {
         Self {
-            sum_squared: 0.0,   
-            num_samples: 0,
+            envelope_value: 0.,
+            attack_coefficient: Self::calculate_coefficient(&sample_rate, Duration::from_millis(10)),
+            release_coefficient: Self::calculate_coefficient(&sample_rate, Duration::from_millis(100)),
         }
     }
 
-    pub fn process(&mut self, sample: f32, mode: EnvelopeMode) -> f32 {
-        self.sum_squared = sample.powf(2.);
-        self.num_samples += 1;
+    fn calculate_coefficient(sample_rate: &f32, time: Duration) -> f32 {
+        (-1.0 / (sample_rate * time.as_secs_f32())).exp()
+    }
 
-        let rms = match mode {
-            EnvelopeMode::Continuous => 1.,
-            EnvelopeMode::Follow => (self.sum_squared / (self.num_samples as f32)).sqrt(),
+    pub fn process(&mut self, sample: f32) -> f32 {
 
+        let sample_abs = sample.abs();
+
+        let coefficient = if self.envelope_value < sample_abs {
+            self.attack_coefficient
+        } else {
+            self.release_coefficient
         };
-        rms
+
+        self.envelope_value = (self.envelope_value * coefficient) + sample_abs * (1.0 - coefficient);
+        self.envelope_value
     }
 }
 

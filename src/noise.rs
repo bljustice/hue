@@ -4,7 +4,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
-use crate::envelope::follower::EnvelopeFollower;
+use crate::{envelope::follower::{EnvelopeFollower, EnvelopeMode}, params::NoiseType};
 use crate::filters::biquad::Biquad;
 use crate::gui;
 use crate::params::NoiseParams;
@@ -37,6 +37,7 @@ impl Default for Noise {
         let sample_rate = Arc::new(AtomicF32::new(44.1e3));
 
         let should_update_filter = Arc::new(AtomicBool::new(true));
+        let env = EnvelopeFollower::new(&sample_rate.load(std::sync::atomic::Ordering::Relaxed));
 
         Self {
             params: Arc::new(NoiseParams::new(should_update_filter)),
@@ -52,9 +53,54 @@ impl Default for Noise {
             lpf: Default::default(),
             hpf: Default::default(),
             should_update_filter: Arc::new(AtomicBool::new(false)),
-            envelope_follower: EnvelopeFollower::new(),
+            envelope_follower: env,
         }
     }
+}
+
+impl Noise {
+    fn next(&mut self) -> f32 {
+        let noise_sample = match self.params.noise_type.value() {
+            NoiseType::White => self
+                .white
+                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+            NoiseType::Pink => self
+                .pink
+                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+            NoiseType::Brown => self
+                .brown
+                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+            NoiseType::Violet => self
+                .violet
+                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+        };
+        noise_sample
+    }
+
+    fn filter_noise(&mut self, sample: f32) -> f32 {
+        let lowpassed_noise = self.lpf.process(sample);
+        self.hpf.process(lowpassed_noise)
+    }
+
+    pub fn process(&mut self, sample: f32) -> f32 {
+        let noise_sample = self.next();
+        let filtered_noise = self.filter_noise(noise_sample);
+        let mix_level = self.params.mix.value();
+        let gain = self.params.gain.value();
+        
+        let final_sample = match self.params.env_mode.value() {
+            EnvelopeMode::Continuous => ((filtered_noise * gain) * mix_level) + (sample * (1. - mix_level)),
+            EnvelopeMode::Follow => {
+                // todo: fix noise level when mix is at 100%
+                // currently this causes no noise to come out since the value is multiplied by 0
+                let rms = self.envelope_follower.process(sample);
+                let noise_w_envelope = rms * filtered_noise;
+                (mix_level * noise_w_envelope) + (sample * (1. - mix_level))
+            }
+        };
+        final_sample
+    }
+
 }
 
 pub trait NoiseConfig {

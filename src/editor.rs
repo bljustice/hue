@@ -459,6 +459,7 @@ fn build_gui(cx: &mut Context) -> Handle<VStack> {
                             ),
                             ("Mix level".to_string(), p.mix.load(Relaxed)),
                             ("Gain level".to_string(), p.gain.load(Relaxed)),
+                            ("RMS".to_string(), p.rms.load(Relaxed)),
                         ];
                     }),
                     "debug-container".to_string(),
