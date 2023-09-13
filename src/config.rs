@@ -29,7 +29,14 @@ impl Default for Debug {
 }
 
 impl Debug {
-    pub fn update(&mut self, sample_value: f32, sample_rate: f32, mix_level: f32, gain_level: f32, envelope: f32) {
+    pub fn update(
+        &mut self,
+        sample_value: f32,
+        sample_rate: f32,
+        mix_level: f32,
+        gain_level: f32,
+        envelope: f32,
+    ) {
         self.current_sample_val.store(sample_value, Relaxed);
         self.sample_rate.store(sample_rate, Relaxed);
         self.mix.store(mix_level, Relaxed);

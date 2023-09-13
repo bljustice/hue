@@ -1,5 +1,5 @@
-use std::time::Duration;
 use nih_plug::prelude::Enum;
+use std::time::Duration;
 
 #[derive(Enum, PartialEq, Debug)]
 pub enum EnvelopeMode {
@@ -17,8 +17,14 @@ impl EnvelopeFollower {
     pub fn new(sample_rate: &f32) -> Self {
         Self {
             envelope_value: 0.,
-            attack_coefficient: Self::calculate_coefficient(&sample_rate, Duration::from_millis(10)),
-            release_coefficient: Self::calculate_coefficient(&sample_rate, Duration::from_millis(100)),
+            attack_coefficient: Self::calculate_coefficient(
+                &sample_rate,
+                Duration::from_millis(10),
+            ),
+            release_coefficient: Self::calculate_coefficient(
+                &sample_rate,
+                Duration::from_millis(100),
+            ),
         }
     }
 
@@ -32,9 +38,8 @@ impl EnvelopeFollower {
             true => self.attack_coefficient,
             false => self.release_coefficient,
         };
-        self.envelope_value = (self.envelope_value * env_coefficient) + sample_abs * (1.0 - env_coefficient);
+        self.envelope_value =
+            (self.envelope_value * env_coefficient) + sample_abs * (1.0 - env_coefficient);
         self.envelope_value
     }
 }
-
-

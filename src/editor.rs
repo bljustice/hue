@@ -8,11 +8,11 @@ use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
 use std::env;
 use std::sync::{atomic::Ordering::Relaxed, Arc};
 
-use crate::{config, envelope};
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::gui::debug::DebugContainer;
 use crate::gui::knob::KnobContainer;
 use crate::params::{NoiseParams, NoiseType, WhiteNoiseDistribution};
+use crate::{config, envelope};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PLUGIN_WIDTH: f32 = 400.0;
@@ -102,15 +102,21 @@ impl Model for UiData {
                 setter.begin_set_parameter(&self.params.hpf_fc);
                 setter.set_parameter_normalized(&self.params.hpf_fc, *f);
                 setter.end_set_parameter(&self.params.hpf_fc);
-            },
+            }
             ParamChangeEvent::EnvelopeModeEvent(s) => {
                 if s == "follow" {
                     setter.begin_set_parameter(&self.params.env_mode);
-                    setter.set_parameter(&self.params.env_mode, envelope::follower::EnvelopeMode::Follow);
+                    setter.set_parameter(
+                        &self.params.env_mode,
+                        envelope::follower::EnvelopeMode::Follow,
+                    );
                     setter.end_set_parameter(&self.params.env_mode);
                 } else if s == "continuous" {
                     setter.begin_set_parameter(&self.params.env_mode);
-                    setter.set_parameter(&self.params.env_mode, envelope::follower::EnvelopeMode::Continuous);
+                    setter.set_parameter(
+                        &self.params.env_mode,
+                        envelope::follower::EnvelopeMode::Continuous,
+                    );
                     setter.end_set_parameter(&self.params.env_mode);
                 }
             }
@@ -407,8 +413,8 @@ fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
         })
         .class("all-dropdowns-container")
         .child_space(Stretch(1.0));
-} else {
-    return HStack::new(cx, move |cx| {
+    } else {
+        return HStack::new(cx, move |cx| {
             create_noise_selector(cx);
             create_white_noise_selector(cx);
             create_envelope_mode_block(cx);

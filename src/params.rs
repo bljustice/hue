@@ -1,5 +1,5 @@
 use nih_plug::prelude::{
-    formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle
+    formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
 use nih_plug_vizia::ViziaState;
 use std::sync::{
@@ -106,10 +106,7 @@ impl NoiseParams {
                 let should_update_filters = should_update_filters.clone();
                 Arc::new(move |_| should_update_filters.store(true, Ordering::Relaxed))
             }),
-            env_mode: EnumParam::new(
-                "Envelope Mode",
-                envelope::follower::EnvelopeMode::Follow,
-            )
+            env_mode: EnumParam::new("Envelope Mode", envelope::follower::EnvelopeMode::Follow),
         }
     }
 }

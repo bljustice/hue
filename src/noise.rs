@@ -4,12 +4,15 @@ use std::{
     sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
-use crate::{envelope::follower::{EnvelopeFollower, EnvelopeMode}, params::NoiseType};
 use crate::filters::biquad::Biquad;
 use crate::gui;
 use crate::params::NoiseParams;
 use crate::spectrum::Spectrum;
 use crate::{config, params::WhiteNoiseDistribution};
+use crate::{
+    envelope::follower::{EnvelopeFollower, EnvelopeMode},
+    params::NoiseType,
+};
 use rand::{rngs::StdRng, SeedableRng};
 use rand_distr::{Distribution, Normal, Uniform};
 
@@ -87,9 +90,11 @@ impl Noise {
         let filtered_noise = self.filter_noise(noise_sample);
         let mix_level = self.params.mix.value();
         let gain = self.params.gain.value();
-        
+
         let final_sample = match self.params.env_mode.value() {
-            EnvelopeMode::Continuous => ((filtered_noise * gain) * mix_level) + (sample * (1. - mix_level)),
+            EnvelopeMode::Continuous => {
+                ((filtered_noise * gain) * mix_level) + (sample * (1. - mix_level))
+            }
             EnvelopeMode::Follow => {
                 let envelope = self.envelope_follower.process(sample);
                 let noise_w_envelope = envelope * filtered_noise;
@@ -174,7 +179,8 @@ impl NoiseConfig for Pink {
         self.b5 = -0.7616 * self.b5 - white * 0.0168980;
 
         let out =
-            (self.b0 + self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6 + white * 0.5362) * 0.11;
+            (self.b0 + self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6 + white * 0.5362)
+                * 0.11;
 
         self.b6 = white * 0.115926;
         out
@@ -202,8 +208,7 @@ impl NoiseConfig for Brown {
 
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
         let white = self.white(white_noise_type, rng);
-        self.current_sample =
-            (self.leak * self.current_sample) + (1.0 - self.leak) * white;
+        self.current_sample = (self.leak * self.current_sample) + (1.0 - self.leak) * white;
         self.current_sample
     }
 }

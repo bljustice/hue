@@ -119,7 +119,13 @@ impl Plugin for noise::Noise {
                 *sample = self.process(*sample);
 
                 if cfg!(debug_assertions) {
-                    self.debug.update(*sample, sr, mix_level, gain, self.envelope_follower.process(*sample));
+                    self.debug.update(
+                        *sample,
+                        sr,
+                        mix_level,
+                        gain,
+                        self.envelope_follower.process(*sample),
+                    );
                 }
             }
         }
