@@ -7,7 +7,7 @@ use std::sync::{
     Arc,
 };
 
-use crate::editor;
+use crate::{editor, envelope};
 
 #[derive(Enum, PartialEq, Debug)]
 pub enum NoiseType {
@@ -43,6 +43,8 @@ pub struct NoiseParams {
     pub hpf_fc: FloatParam,
     #[id = "lowpass-frequency-cutoff"]
     pub lpf_fc: FloatParam,
+    #[id = "envelope-mode"]
+    pub env_mode: EnumParam<envelope::follower::EnvelopeMode>,
 }
 
 impl NoiseParams {
@@ -51,7 +53,7 @@ impl NoiseParams {
             editor_state: editor::default_state(),
             gain: FloatParam::new(
                 "Gain",
-                util::db_to_gain(0.0),
+                util::db_to_gain(-6.0),
                 FloatRange::Skewed {
                     min: util::db_to_gain(-30.0),
                     max: util::db_to_gain(30.0),
@@ -104,6 +106,7 @@ impl NoiseParams {
                 let should_update_filters = should_update_filters.clone();
                 Arc::new(move |_| should_update_filters.store(true, Ordering::Relaxed))
             }),
+            env_mode: EnumParam::new("Envelope Mode", envelope::follower::EnvelopeMode::Follow),
         }
     }
 }
