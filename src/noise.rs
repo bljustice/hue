@@ -91,16 +91,13 @@ impl Noise {
         let final_sample = match self.params.env_mode.value() {
             EnvelopeMode::Continuous => ((filtered_noise * gain) * mix_level) + (sample * (1. - mix_level)),
             EnvelopeMode::Follow => {
-                // todo: fix noise level when mix is at 100%
-                // currently this causes no noise to come out since the value is multiplied by 0
-                let rms = self.envelope_follower.process(sample);
-                let noise_w_envelope = rms * filtered_noise;
-                (mix_level * noise_w_envelope) + (sample * (1. - mix_level))
+                let envelope = self.envelope_follower.process(sample);
+                let noise_w_envelope = envelope * filtered_noise;
+                ((mix_level * noise_w_envelope) * gain) + (sample * (1. - mix_level))
             }
         };
         final_sample
     }
-
 }
 
 pub trait NoiseConfig {
@@ -110,14 +107,14 @@ pub trait NoiseConfig {
         let random_sample: f32 = match white_noise_type {
             WhiteNoiseDistribution::Normal => {
                 let dist = Normal::<f32>::new(0.0, 1.0).unwrap();
-                dist.sample(rng).clamp(-1.0, 1.0)
+                dist.sample(rng)
             }
             WhiteNoiseDistribution::Uniform => {
                 let dist = Uniform::<f32>::new(-1.0, 1.0);
-                dist.sample(rng).clamp(-1.0, 1.0)
+                dist.sample(rng)
             }
         };
-        return random_sample;
+        random_sample.clamp(-1.0, 1.0)
     }
 }
 
@@ -133,7 +130,7 @@ impl NoiseConfig for White {
     fn reset(&mut self) {}
 
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        return self.white(white_noise_type, rng) * 0.1;
+        return self.white(white_noise_type, rng);
     }
 }
 
@@ -177,10 +174,10 @@ impl NoiseConfig for Pink {
         self.b5 = -0.7616 * self.b5 - white * 0.0168980;
 
         let out =
-            self.b0 + self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6 + white * 0.5362;
+            (self.b0 + self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6 + white * 0.5362) * 0.11;
 
         self.b6 = white * 0.115926;
-        return out * 0.05;
+        out
     }
 }
 
@@ -206,8 +203,8 @@ impl NoiseConfig for Brown {
     fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
         let white = self.white(white_noise_type, rng);
         self.current_sample =
-            ((self.leak * self.current_sample) + (1.0 - self.leak) * white).clamp(-1.0, 1.0);
-        return self.current_sample;
+            (self.leak * self.current_sample) + (1.0 - self.leak) * white;
+        self.current_sample
     }
 }
 

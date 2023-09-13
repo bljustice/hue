@@ -1,5 +1,4 @@
 use std::time::Duration;
-
 use nih_plug::prelude::Enum;
 
 #[derive(Enum, PartialEq, Debug)]
@@ -15,7 +14,6 @@ pub struct EnvelopeFollower {
 }
 
 impl EnvelopeFollower {
-
     pub fn new(sample_rate: &f32) -> Self {
         Self {
             envelope_value: 0.,
@@ -29,16 +27,12 @@ impl EnvelopeFollower {
     }
 
     pub fn process(&mut self, sample: f32) -> f32 {
-
         let sample_abs = sample.abs();
-
-        let coefficient = if self.envelope_value < sample_abs {
-            self.attack_coefficient
-        } else {
-            self.release_coefficient
+        let env_coefficient = match self.envelope_value < sample_abs {
+            true => self.attack_coefficient,
+            false => self.release_coefficient,
         };
-
-        self.envelope_value = (self.envelope_value * coefficient) + sample_abs * (1.0 - coefficient);
+        self.envelope_value = (self.envelope_value * env_coefficient) + sample_abs * (1.0 - env_coefficient);
         self.envelope_value
     }
 }

@@ -53,7 +53,7 @@ impl NoiseParams {
             editor_state: editor::default_state(),
             gain: FloatParam::new(
                 "Gain",
-                util::db_to_gain(0.0),
+                util::db_to_gain(-6.0),
                 FloatRange::Skewed {
                     min: util::db_to_gain(-30.0),
                     max: util::db_to_gain(30.0),

@@ -10,7 +10,7 @@ pub struct Debug {
     pub output_buffer: Arc<AtomicF32>,
     pub mix: Arc<AtomicF32>,
     pub gain: Arc<AtomicF32>,
-    pub rms: Arc<AtomicF32>,
+    pub envelope: Arc<AtomicF32>,
 }
 
 impl Default for Debug {
@@ -23,18 +23,18 @@ impl Default for Debug {
             output_buffer: Arc::new(AtomicF32::new(0.0)),
             mix: Arc::new(AtomicF32::new(0.5)),
             gain: Arc::new(AtomicF32::new(0.0)),
-            rms: Arc::new(AtomicF32::new(0.)),
+            envelope: Arc::new(AtomicF32::new(0.)),
         }
     }
 }
 
 impl Debug {
-    pub fn update(&mut self, sample_value: f32, sample_rate: f32, mix_level: f32, gain_level: f32, rms: f32) {
+    pub fn update(&mut self, sample_value: f32, sample_rate: f32, mix_level: f32, gain_level: f32, envelope: f32) {
         self.current_sample_val.store(sample_value, Relaxed);
         self.sample_rate.store(sample_rate, Relaxed);
         self.mix.store(mix_level, Relaxed);
         self.gain.store(gain_level, Relaxed);
-        self.rms.store(rms, Relaxed);
+        self.envelope.store(envelope, Relaxed);
 
         if sample_value > self.max_sample_val.load(Relaxed) {
             self.max_sample_val.store(sample_value, Relaxed);
