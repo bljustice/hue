@@ -4,17 +4,14 @@ use std::{
     sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
+use crate::config;
 use crate::filters::biquad::Biquad;
 use crate::gui;
-use crate::params::NoiseParams;
+use crate::params::{NoiseParams, NoiseType};
 use crate::spectrum::Spectrum;
-use crate::{config, params::WhiteNoiseDistribution};
-use crate::{
-    envelope::follower::{EnvelopeFollower, EnvelopeMode},
-    params::NoiseType,
-};
+use crate::envelope::follower::{EnvelopeFollower, EnvelopeMode};
 use rand::{rngs::StdRng, SeedableRng};
-use rand_distr::{Distribution, Normal, Uniform};
+use rand_distr::{Distribution, Uniform};
 
 pub struct Noise {
     pub params: Arc<NoiseParams>,
@@ -64,18 +61,10 @@ impl Default for Noise {
 impl Noise {
     fn next(&mut self) -> f32 {
         let noise_sample = match self.params.noise_type.value() {
-            NoiseType::White => self
-                .white
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
-            NoiseType::Pink => self
-                .pink
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
-            NoiseType::Brown => self
-                .brown
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
-            NoiseType::Violet => self
-                .violet
-                .next(&self.params.white_noise_distribution.value(), &mut self.rng),
+            NoiseType::White => self.white.next(&mut self.rng),
+            NoiseType::Pink => self.pink.next(&mut self.rng),
+            NoiseType::Brown => self.brown.next(&mut self.rng),
+            NoiseType::Violet => self.violet.next(&mut self.rng),
         };
         noise_sample
     }
@@ -107,19 +96,10 @@ impl Noise {
 
 pub trait NoiseConfig {
     fn reset(&mut self);
-    fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32;
-    fn white(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        let random_sample: f32 = match white_noise_type {
-            WhiteNoiseDistribution::Normal => {
-                let dist = Normal::<f32>::new(0.0, 1.0).unwrap();
-                dist.sample(rng)
-            }
-            WhiteNoiseDistribution::Uniform => {
-                let dist = Uniform::<f32>::new(-1.0, 1.0);
-                dist.sample(rng)
-            }
-        };
-        random_sample.clamp(-1.0, 1.0)
+    fn next(&mut self, rng: &mut StdRng) -> f32;
+    fn white(&mut self, rng: &mut StdRng) -> f32 {
+        let dist = Uniform::<f32>::new(-1.0, 1.0);
+        dist.sample(rng).clamp(-1.0, 1.0)
     }
 }
 
@@ -134,8 +114,8 @@ impl White {
 impl NoiseConfig for White {
     fn reset(&mut self) {}
 
-    fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        return self.white(white_noise_type, rng);
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        return self.white(rng);
     }
 }
 
@@ -169,8 +149,8 @@ impl NoiseConfig for Pink {
         let _ = mem::replace(self, Pink::new());
     }
 
-    fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        let white = self.white(white_noise_type, rng);
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        let white = self.white(rng);
         self.b0 = 0.99886 * self.b0 + white * 0.0555179;
         self.b1 = 0.99332 * self.b1 + white * 0.0750759;
         self.b2 = 0.96900 * self.b2 + white * 0.1538520;
@@ -206,8 +186,8 @@ impl NoiseConfig for Brown {
         let _ = mem::replace(self, Brown::new(0.99));
     }
 
-    fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        let white = self.white(white_noise_type, rng);
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        let white = self.white(rng);
         self.current_sample = (self.leak * self.current_sample) + (1.0 - self.leak) * white;
         self.current_sample
     }
@@ -230,8 +210,8 @@ impl NoiseConfig for Violet {
         let _ = mem::replace(self, Violet::new());
     }
 
-    fn next(&mut self, white_noise_type: &WhiteNoiseDistribution, rng: &mut StdRng) -> f32 {
-        let white = self.white(white_noise_type, rng) * 0.1;
+    fn next(&mut self, rng: &mut StdRng) -> f32 {
+        let white = self.white(rng) * 0.1;
         let violet = white - self.previous_sample;
         self.previous_sample = white;
         return violet;

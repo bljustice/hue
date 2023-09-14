@@ -11,7 +11,7 @@ use std::sync::{atomic::Ordering::Relaxed, Arc};
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
 use crate::gui::debug::DebugContainer;
 use crate::gui::knob::KnobContainer;
-use crate::params::{NoiseParams, NoiseType, WhiteNoiseDistribution};
+use crate::params::{NoiseParams, NoiseType};
 use crate::{config, envelope};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -35,7 +35,6 @@ struct UiData {
 #[derive(Debug)]
 pub enum ParamChangeEvent {
     NoiseEvent(String),
-    WhiteNoiseDistributionEvent(String),
     MixSet(f32),
     GainSet(f32),
     LpfSet(f32),
@@ -64,23 +63,6 @@ impl Model for UiData {
                     setter.begin_set_parameter(&self.params.noise_type);
                     setter.set_parameter(&self.params.noise_type, NoiseType::Violet);
                     setter.end_set_parameter(&self.params.noise_type);
-                }
-            }
-            ParamChangeEvent::WhiteNoiseDistributionEvent(s) => {
-                if s == "normal" {
-                    setter.begin_set_parameter(&self.params.white_noise_distribution);
-                    setter.set_parameter(
-                        &self.params.white_noise_distribution,
-                        WhiteNoiseDistribution::Normal,
-                    );
-                    setter.end_set_parameter(&self.params.white_noise_distribution);
-                } else if s == "uniform" {
-                    setter.begin_set_parameter(&self.params.white_noise_distribution);
-                    setter.set_parameter(
-                        &self.params.white_noise_distribution,
-                        WhiteNoiseDistribution::Uniform,
-                    );
-                    setter.end_set_parameter(&self.params.white_noise_distribution);
                 }
             }
             ParamChangeEvent::MixSet(f) => {
@@ -254,60 +236,6 @@ fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
     .class("spectrum-analyzer-container")
 }
 
-fn create_white_noise_selector(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "Distribution")
-            .font_size(15.0 * POINT_SCALE)
-            .class("dropdown-label");
-        Dropdown::new(
-            cx,
-            move |cx| {
-                VStack::new(cx, move |cx| {
-                    Label::new(
-                        cx,
-                        UiData::params.map(|p| p.white_noise_distribution.to_string()),
-                    );
-                    Label::new(cx, ICON_DOWN_OPEN).class("arrow");
-                })
-                .class("title")
-                .child_space(Stretch(1.0))
-            },
-            move |cx| {
-                // List of options
-                List::new(cx, UiData::white_noise_types, move |cx, _idx, item| {
-                    VStack::new(cx, move |cx| {
-                        Binding::new(
-                            cx,
-                            UiData::params.map(|p| p.white_noise_distribution.to_string()),
-                            move |cx, choice| {
-                                let selected = *item.get(cx) == *choice.get(cx);
-                                Label::new(cx, &item.get(cx))
-                                    .background_color(if selected {
-                                        Color::from("#c28919")
-                                    } else {
-                                        Color::transparent()
-                                    })
-                                    .on_press(move |cx| {
-                                        cx.emit(ParamChangeEvent::WhiteNoiseDistributionEvent(
-                                            item.get(cx),
-                                        ));
-                                        cx.emit(views::PopupEvent::Close);
-                                    })
-                                    .child_space(Stretch(1.0))
-                                    .class("dropdown-label-value");
-                            },
-                        );
-                    });
-                });
-            },
-        )
-        .width(Percentage(90.0))
-        .class("white-noise-dropdown");
-    })
-    .child_space(Stretch(1.0))
-    .class("white-noise-dropdown-container")
-}
-
 fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
     VStack::new(cx, |cx| {
         Label::new(cx, "Noise Type")
@@ -408,7 +336,6 @@ fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
     if cfg!(debug_assertions) {
         return HStack::new(cx, move |cx| {
             create_noise_selector(cx);
-            create_white_noise_selector(cx);
             create_envelope_mode_block(cx);
         })
         .class("all-dropdowns-container")
@@ -416,7 +343,6 @@ fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
     } else {
         return HStack::new(cx, move |cx| {
             create_noise_selector(cx);
-            create_white_noise_selector(cx);
             create_envelope_mode_block(cx);
         })
         .class("all-dropdowns-container")
