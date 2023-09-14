@@ -4,15 +4,12 @@ use std::{
     sync::{atomic::AtomicBool, Arc, Mutex},
 };
 
+use crate::config;
 use crate::filters::biquad::Biquad;
 use crate::gui;
-use crate::params::NoiseParams;
+use crate::params::{NoiseParams, NoiseType};
 use crate::spectrum::Spectrum;
-use crate::config;
-use crate::{
-    envelope::follower::{EnvelopeFollower, EnvelopeMode},
-    params::NoiseType,
-};
+use crate::envelope::follower::{EnvelopeFollower, EnvelopeMode};
 use rand::{rngs::StdRng, SeedableRng};
 use rand_distr::{Distribution, Uniform};
 
@@ -64,18 +61,10 @@ impl Default for Noise {
 impl Noise {
     fn next(&mut self) -> f32 {
         let noise_sample = match self.params.noise_type.value() {
-            NoiseType::White => self
-                .white
-                .next(&mut self.rng),
-            NoiseType::Pink => self
-                .pink
-                .next(&mut self.rng),
-            NoiseType::Brown => self
-                .brown
-                .next(&mut self.rng),
-            NoiseType::Violet => self
-                .violet
-                .next(&mut self.rng),
+            NoiseType::White => self.white.next(&mut self.rng),
+            NoiseType::Pink => self.pink.next(&mut self.rng),
+            NoiseType::Brown => self.brown.next(&mut self.rng),
+            NoiseType::Violet => self.violet.next(&mut self.rng),
         };
         noise_sample
     }
