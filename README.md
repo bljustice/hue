@@ -1,7 +1,5 @@
 # Hue
-<center>
 ![](plugin.png)
-</center>
 
 ## Overview
 
