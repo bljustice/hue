@@ -1,5 +1,7 @@
 # Hue
-![](plugin.png)
+<p align="center">
+<img height="400" src="./plugin.png">
+</p>
 
 ## Overview
 
