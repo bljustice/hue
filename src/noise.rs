@@ -189,7 +189,7 @@ impl NoiseConfig for Brown {
     fn next(&mut self, rng: &mut StdRng) -> f32 {
         let white = self.white(rng);
         self.current_sample = (self.leak * self.current_sample) + (1.0 - self.leak) * white;
-        self.current_sample
+        self.current_sample * 10.
     }
 }
 
