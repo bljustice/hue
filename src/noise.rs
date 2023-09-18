@@ -160,7 +160,7 @@ impl NoiseConfig for Pink {
 
         let out =
             (self.b0 + self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6 + white * 0.5362)
-                * 0.11;
+                * 0.25;
 
         self.b6 = white * 0.115926;
         out
