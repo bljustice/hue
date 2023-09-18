@@ -211,7 +211,7 @@ impl NoiseConfig for Violet {
     }
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        let white = self.white(rng) * 0.1;
+        let white = self.white(rng) * 0.8;
         let violet = white - self.previous_sample;
         self.previous_sample = white;
         return violet;
