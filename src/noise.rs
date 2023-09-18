@@ -160,7 +160,7 @@ impl NoiseConfig for Pink {
 
         let out =
             (self.b0 + self.b1 + self.b2 + self.b3 + self.b4 + self.b5 + self.b6 + white * 0.5362)
-                * 0.11;
+                * 0.25;
 
         self.b6 = white * 0.115926;
         out
@@ -189,7 +189,7 @@ impl NoiseConfig for Brown {
     fn next(&mut self, rng: &mut StdRng) -> f32 {
         let white = self.white(rng);
         self.current_sample = (self.leak * self.current_sample) + (1.0 - self.leak) * white;
-        self.current_sample
+        self.current_sample * 10.
     }
 }
 
@@ -211,7 +211,7 @@ impl NoiseConfig for Violet {
     }
 
     fn next(&mut self, rng: &mut StdRng) -> f32 {
-        let white = self.white(rng) * 0.1;
+        let white = self.white(rng) * 0.8;
         let violet = white - self.previous_sample;
         self.previous_sample = white;
         return violet;
