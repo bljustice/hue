@@ -5,11 +5,11 @@ use std::{
 };
 
 use crate::config;
+use crate::envelope::follower::{EnvelopeFollower, EnvelopeMode};
 use crate::filters::biquad::Biquad;
 use crate::gui;
 use crate::params::{NoiseParams, NoiseType};
 use crate::spectrum::Spectrum;
-use crate::envelope::follower::{EnvelopeFollower, EnvelopeMode};
 use rand::{rngs::StdRng, SeedableRng};
 use rand_distr::{Distribution, Uniform};
 

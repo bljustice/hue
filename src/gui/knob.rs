@@ -1,4 +1,8 @@
-use nih_plug_vizia::vizia::{prelude::*, view::View, views::{Knob, TickKnob, ArcTrack}};
+use nih_plug_vizia::vizia::{
+    prelude::*,
+    view::View,
+    views::{ArcTrack, Knob, TickKnob},
+};
 
 pub struct KnobContainer {}
 
@@ -24,34 +28,29 @@ impl KnobContainer {
         Self {}.build(cx, |cx| {
             VStack::new(cx, |cx| {
                 Label::new(cx, &label);
-                Knob::custom(
-                    cx,
-                    0.5,
-                    lens,
-                    move |cx, lens| {
-                        TickKnob::new(
-                            cx,
-                            Percentage(80.),
-                            Pixels(2.),
-                            Percentage(75.),
-                            270.,
-                            KnobMode::Continuous,
-                        )
-                        .value(lens.clone())
-                        .class("tick");
-                        ArcTrack::new(
-                            cx,
-                            false,
-                            Percentage(100.),
-                            Percentage(10.),
-                            -135.,
-                            135.,
-                            KnobMode::Continuous,
-                        )
-                        .value(lens)
-                        .class("track")
-                    }
-                )
+                Knob::custom(cx, 0.5, lens, move |cx, lens| {
+                    TickKnob::new(
+                        cx,
+                        Percentage(80.),
+                        Pixels(2.),
+                        Percentage(75.),
+                        270.,
+                        KnobMode::Continuous,
+                    )
+                    .value(lens.clone())
+                    .class("tick");
+                    ArcTrack::new(
+                        cx,
+                        false,
+                        Percentage(100.),
+                        Percentage(10.),
+                        -135.,
+                        135.,
+                        KnobMode::Continuous,
+                    )
+                    .value(lens)
+                    .class("track")
+                })
                 .on_changing(on_change_callback);
                 Label::new(cx, value_lens);
             })
