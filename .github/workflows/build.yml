@@ -2,12 +2,12 @@ name: automated-build
 
 on:
   push:
-    paths-ignore:
-      - 'plugin.png'
-      - 'README.md'
-      - '.gitignore'
-      - 'LICENSE'
-      - 'build_plugin.sh'
+    paths:
+      - '!plugin.png'
+      - '!README.md'
+      - '!.gitignore'
+      - '!LICENSE'
+      - '!build_plugin.sh'
     branches:
         main
 defaults:
