@@ -2,8 +2,6 @@ name: test-plugin-build
 
 on:
   pull_request:
-    types:
-      - opened
     branches:
       - main
 defaults:
