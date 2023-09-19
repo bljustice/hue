@@ -1,22 +1,22 @@
-name: automated-build
+name: test-plugin-build
 
 on:
-  push:
+  pull_request:
     branches:
-        main
+      - main
 defaults:
   run:
     shell: bash
 
 jobs:
-  package:
+  test:
     strategy:
       matrix:
         include:
           - { name: ubuntu-22.04,       os: ubuntu-22.04,   cross-target: '' }
           - { name: macos-universal,    os: macos-11,       cross-target: aarch64-apple-darwin }
           - { name: windows,            os: windows-latest, cross-target: '' }
-    name: Package plugin binaries
+    name: Test plugin builds
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
@@ -73,17 +73,3 @@ jobs:
 
             cargo xtask bundle "${package_args[@]}" --release
           fi
-      - name: Determine build archive name
-        run: |
-          echo "ARCHIVE_NAME=hue-$(git describe --always)-${{ matrix.name }}" >> "$GITHUB_ENV"
-      - name: Move all packaged plugin into a directory
-        run: |
-          # GitHub Action strips the top level directory, great, have another one
-          mkdir -p "$ARCHIVE_NAME/$ARCHIVE_NAME"
-          mv target/bundled/* "$ARCHIVE_NAME/$ARCHIVE_NAME"
-      - name: Add an OS-specific readme file with installation instructions
-        run: cp ".github/workflows/readme-${{ runner.os }}.txt" "$ARCHIVE_NAME/$ARCHIVE_NAME/README.txt"
-      - uses: actions/upload-artifact@v2
-        with:
-          name: ${{ env.ARCHIVE_NAME }}
-          path: ${{ env.ARCHIVE_NAME }}
