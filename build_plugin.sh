@@ -26,4 +26,4 @@ echo "Removing old release version from CLAP folder."
 rm -rf ~/Library/Audio/Plug-Ins/CLAP/hue.clap
 
 echo "Moving new vst3 version into CLAP folder."
-mv target/bundled/hue.vst3 ~/Library/Audio/Plug-Ins/CLAP/hue.clap
+mv target/bundled/hue.clap ~/Library/Audio/Plug-Ins/CLAP/hue.clap
