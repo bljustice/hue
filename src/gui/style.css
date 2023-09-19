@@ -57,3 +57,7 @@ knob {
 knob .track {
     background-color: #1eaf75;
 }
+
+knob .tick {
+    background-color: #eeece4be;
+}
