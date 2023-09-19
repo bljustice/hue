@@ -35,5 +35,5 @@ git clone https://github.com/bljustice/hue.git
 ```
 2. Run the following script within the repo, which will create the vst3 version fo the plugin.
 ```bash
-./build_vst3.sh -r
+./build_plugin.sh -r
 ```
