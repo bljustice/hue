@@ -72,7 +72,7 @@ impl Model for UiData {
             }
             ParamChangeEvent::GainSet(f) => {
                 setter.begin_set_parameter(&self.params.gain);
-                setter.set_parameter(&self.params.gain, *f);
+                setter.set_parameter_normalized(&self.params.gain, *f);
                 setter.end_set_parameter(&self.params.gain);
             }
             ParamChangeEvent::LpfSet(f) => {
@@ -179,7 +179,7 @@ fn create_gain_block(cx: &mut Context) -> Handle<KnobContainer> {
     KnobContainer::new(
         cx,
         "Gain".to_string(),
-        UiData::params.map(|p| p.gain.value()),
+        UiData::params.map(|p| p.gain.unmodulated_normalized_value()),
         UiData::params.map(|p| p.gain.to_string()),
         move |cx, val| {
             cx.emit(ParamChangeEvent::GainSet(val));
