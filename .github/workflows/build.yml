@@ -3,6 +3,7 @@ name: automated-build
 on:
   push:
     paths:
+      - '**'
       - '!plugin.png'
       - '!README.md'
       - '!.gitignore'
