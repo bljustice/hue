@@ -3,6 +3,7 @@ name: test-plugin-build
 on:
   pull_request:
     paths:
+      - '**'
       - '!plugin.png'
       - '!README.md'
       - '!.gitignore'
