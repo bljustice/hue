@@ -137,7 +137,7 @@ impl Plugin for noise::Noise {
 }
 
 impl ClapPlugin for noise::Noise {
-    const CLAP_ID: &'static str = "audio.bjustice.hue";
+    const CLAP_ID: &'static str = "info.bjustice.hue";
     const CLAP_DESCRIPTION: Option<&'static str> = Some("A plugin that helps mix in different noise types to your audio signal.");
     const CLAP_MANUAL_URL: Option<&'static str> = Some(Self::URL);
     const CLAP_SUPPORT_URL: Option<&'static str> = None;
