@@ -11,6 +11,9 @@ use realfft::{
 use std::sync::{atomic::Ordering::Relaxed, Arc};
 use triple_buffer::{Input, Output, TripleBuffer};
 
+// Spectrum UI object credits to SolarLiner
+// Several changes were made to make it work for my use case
+// https://github.com/SolarLiner/valib/blob/master/plugins/abrasive/src/editor/analyzer.rs
 pub struct Spectrum {
     stft: StftHelper,
     input: Input<Vec<Complex<f32>>>,
