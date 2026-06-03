@@ -1,9 +1,10 @@
 use atomic_float::AtomicF32;
-use nih_plug::prelude::*;
-use nih_plug_vizia::vizia::{cache::BoundingBox, prelude::*, vg};
-use realfft::num_complex::Complex;
+use nice_plug::prelude::*;
 use std::sync::{atomic::Ordering, Arc, Mutex};
+use std::time::Duration;
 use triple_buffer::Output;
+use vizia_plug::vizia::{layout::BoundingBox, prelude::*, vg};
+use realfft::num_complex::Complex;
 
 pub type SpectrumBuffer = Arc<Mutex<Output<Vec<Complex<f32>>>>>;
 
@@ -30,21 +31,33 @@ impl SpectrumAnalyzer {
         spectrum: SpectrumBuffer,
         sample_rate: Arc<AtomicF32>,
     ) -> Handle<Self> {
+        let redraw_tick = SyncSignal::new(0u32);
+        let tick = redraw_tick.clone();
+        let timer = cx.add_timer(Duration::from_millis(33), None, move |_cx, action| {
+            if matches!(action, TimerAction::Tick(_)) {
+                tick.update(|count| *count += 1);
+            }
+        });
+        cx.start_timer(timer);
+
         Self {
             spectrum,
             sample_rate,
             frequency_range: filter_frequency_range(),
         }
         .build(cx, |_cx| ())
+        .bind(redraw_tick, |mut handle| handle.needs_redraw())
     }
 
-    fn draw_analyzer(&self, cx: &mut DrawContext, canvas: &mut Canvas, bounds: BoundingBox) {
-        let line_width = cx.style.dpi_factor as f32 * 1.5;
-        let line_paint =
-            vg::Paint::color(cx.font_color().cloned().unwrap_or(Color::white()).into())
-                .with_line_width(line_width);
+    fn draw_analyzer(&self, cx: &mut DrawContext, canvas: &Canvas, bounds: BoundingBox) {
+        let line_width = cx.scale_factor() * 1.5;
+        let mut paint = vg::Paint::default();
+        paint.set_color(cx.font_color());
+        paint.set_style(vg::PaintStyle::Stroke);
+        paint.set_stroke_width(line_width);
+        paint.set_anti_alias(true);
 
-        let mut path = vg::Path::new();
+        let mut path = vg::PathBuilder::new();
 
         let mut spectrum = self.spectrum.lock().unwrap();
         let amplitude_spectrum: Vec<f32> = spectrum.read().iter().map(|c| c.norm()).collect();
@@ -53,7 +66,7 @@ impl SpectrumAnalyzer {
 
         for (bin_index, amplitude) in amplitude_spectrum.iter().enumerate() {
             if bin_index == 0 {
-                path.move_to(bounds.x - 100., bounds.y + bounds.h);
+                path.move_to((bounds.x - 100., bounds.y + bounds.h));
                 continue;
             }
 
@@ -63,10 +76,11 @@ impl SpectrumAnalyzer {
             // this changes the height of the visualized spectrum
             let h = (util::gain_to_db(*amplitude) + 100.) / 120.;
 
-            path.line_to(bounds.x + bounds.w * x, bounds.y + bounds.h * (1. - h));
+            path.line_to((bounds.x + bounds.w * x, bounds.y + bounds.h * (1. - h)));
         }
 
-        canvas.stroke_path(&mut path, &line_paint);
+        let path = path.detach();
+        canvas.draw_path(&path, &paint);
     }
 }
 
@@ -75,7 +89,7 @@ impl View for SpectrumAnalyzer {
         Some("spectrum-analyzer")
     }
 
-    fn draw(&self, cx: &mut DrawContext, canvas: &mut Canvas) {
+    fn draw(&self, cx: &mut DrawContext, canvas: &Canvas) {
         let bounds = cx.bounds();
         if bounds.w == 0.0 || bounds.h == 0.0 {
             return;
