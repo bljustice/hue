@@ -11,12 +11,14 @@ crate-type = ["cdylib"]
 members = ["xtask"]
 
 [dependencies]
-atomic_float = "0.1"
-nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["assert_process_allocs"] }
-nih_plug_vizia = { git = "https://github.com/robbert-vdh/nih-plug.git" }
+atomic_float = "1.1"
+nice-plug = { git = "https://codeberg.org/RustAudio/nice-plug.git", features = ["assert_process_allocs"] }
+vizia_plug = { git = "https://github.com/vizia/vizia-plug.git" }
 parking_lot = "0.12.1"
 rand = "0.8.5"
 rand_distr = "0.4.3"
 realfft = "3.3.0"
-triple_buffer = "6.2.0"
-vizia = "0.1.0"
+triple_buffer = "9.0.0"
+
+[patch."https://codeberg.org/BillyDM/nice-plug"]
+nice-plug = { git = "https://codeberg.org/RustAudio/nice-plug.git" }
