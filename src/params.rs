@@ -1,7 +1,7 @@
-use nih_plug::prelude::{
+use nice_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
-use nih_plug_vizia::ViziaState;
+use vizia_plug::ViziaState;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
