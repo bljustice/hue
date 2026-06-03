@@ -3,7 +3,6 @@ use nice_plug::prelude::{Editor, Param};
 use std::sync::Arc;
 use vizia_plug::vizia::prelude::*;
 use vizia_plug::widgets::param_base::ParamWidgetBase;
-use vizia_plug::widgets::{ParamSlider, ParamSliderExt, ParamSliderStyle};
 use vizia_plug::{create_vizia_editor, ViziaState, ViziaTheming};
 
 use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
@@ -20,7 +19,7 @@ const NOTO_SANS: &str = "Noto Sans";
 
 pub(crate) fn default_state() -> Arc<ViziaState> {
     ViziaState::new(|| (PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32))
-}
+}   
 
 pub(crate) fn create(
     params: Arc<NoiseParams>,
@@ -40,18 +39,32 @@ pub(crate) fn create(
             noise_type_color(params_for_background.noise_type.preview_plain(*norm))
         });
 
-        VStack::new(cx, |cx| {
-            create_title_block(cx);
-            create_spectrum_analyzer(cx, spectrum_buffer.clone(), sample_rate.clone());
-            create_knob_row(cx, &params);
-            create_param_selectors(cx, &params);
-            if cfg!(debug_assertions) {
-                DebugContainer::new(cx, debug.clone());
+        let width = Signal::new(Pixels(PLUGIN_WIDTH));
+        let height = Signal::new(Pixels(PLUGIN_HEIGHT));
+
+        Resizable::new(
+            cx,
+            width,
+            ResizeStackDirection::Right,
+            move |_cx, w| width.set(Pixels(w)),
+            |cx| {
+                VStack::new(cx, |cx| {
+                    create_title_block(cx);
+                    create_spectrum_analyzer(cx, spectrum_buffer.clone(), sample_rate.clone());
+                    Divider::new(cx).class("divider");
+                    create_knob_row(cx, &params);
+                    create_param_selectors(cx, &params);
+                    if cfg!(debug_assertions) {
+                        DebugContainer::new(cx, debug.clone());
+                    }
+                })
+                .background_color(background)
+                .gap(Pixels(0.0))
+                .alignment(Alignment::TopCenter);
             }
-        })
-        .background_color(background)
-        .gap(Pixels(0.0))
-        .alignment(Alignment::TopCenter);
+        )
+        .on_reset(move |_cx| width.set(Pixels(PLUGIN_WIDTH)))
+        .on_reset(move |_cx| height.set(Pixels(PLUGIN_HEIGHT)));
     })
 }
 
