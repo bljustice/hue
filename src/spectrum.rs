@@ -1,5 +1,5 @@
 use atomic_float::AtomicF32;
-use nih_plug::{
+use nice_plug::{
     prelude::*,
     util::{window::multiply_with_window, StftHelper},
 };
@@ -64,7 +64,7 @@ impl Spectrum {
             }
         });
 
-        self.input.input_buffer().clone_from(&self.output_buffer);
+        self.input.input_buffer_mut().clone_from(&self.output_buffer);
         self.input.publish();
     }
 }
