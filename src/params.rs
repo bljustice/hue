@@ -1,7 +1,7 @@
 use nice_plug::prelude::{
     formatters, util, Enum, EnumParam, FloatParam, FloatRange, Params, SmoothingStyle,
 };
-use vizia_plug::ViziaState;
+use nice_plug_egui::EguiState;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
@@ -24,7 +24,7 @@ pub enum NoiseType {
 #[derive(Params)]
 pub struct NoiseParams {
     #[persist = "editor-state"]
-    pub editor_state: Arc<ViziaState>,
+    pub editor_state: Arc<EguiState>,
     #[id = "gain"]
     pub gain: FloatParam,
     #[id = "noise-type"]

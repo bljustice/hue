@@ -54,12 +54,9 @@ jobs:
           key: ${{ matrix.name }}-${{ matrix.cross-target }}
 
       - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
-          profile: minimal
-          default: true
-          target: ${{ matrix.cross-target }}
+          targets: ${{ matrix.cross-target }}
       - name: Package all targets from bundler.toml
         run: |
           # Building can be sped up by specifying all packages in one go

@@ -1,10 +1,9 @@
 use atomic_float::AtomicF32;
-use nice_plug::prelude::*;
-use std::sync::{atomic::Ordering, Arc, Mutex};
-use std::time::Duration;
-use triple_buffer::Output;
-use vizia_plug::vizia::{layout::BoundingBox, prelude::*, vg};
+use egui::{Color32, Pos2, Ui, Vec2};
+use nice_plug::prelude::{util, FloatRange};
 use realfft::num_complex::Complex;
+use std::sync::{atomic::Ordering, Arc, Mutex};
+use triple_buffer::Output;
 
 pub type SpectrumBuffer = Arc<Mutex<Output<Vec<Complex<f32>>>>>;
 
@@ -16,85 +15,51 @@ fn filter_frequency_range() -> FloatRange {
     }
 }
 
-// Spectrum UI object credits to SolarLiner
-// It was reworked below to fit my use case
+// Spectrum UI credits to SolarLiner
 // https://github.com/SolarLiner/valib/blob/master/plugins/abrasive/src/editor/analyzer.rs
-pub struct SpectrumAnalyzer {
-    spectrum: SpectrumBuffer,
-    sample_rate: Arc<AtomicF32>,
-    frequency_range: FloatRange,
-}
+pub fn spectrum_analyzer(
+    ui: &mut Ui,
+    spectrum: &SpectrumBuffer,
+    sample_rate: &Arc<AtomicF32>,
+) {
+    let height = 60.0_f32.max(ui.available_width() * 0.12);
+    let (rect, _response) = ui.allocate_exact_size(Vec2::new(ui.available_width(), height), egui::Sense::hover());
 
-impl SpectrumAnalyzer {
-    pub fn new(
-        cx: &mut Context,
-        spectrum: SpectrumBuffer,
-        sample_rate: Arc<AtomicF32>,
-    ) -> Handle<Self> {
-        let redraw_tick = SyncSignal::new(0u32);
-        let tick = redraw_tick.clone();
-        let timer = cx.add_timer(Duration::from_millis(33), None, move |_cx, action| {
-            if matches!(action, TimerAction::Tick(_)) {
-                tick.update(|count| *count += 1);
-            }
-        });
-        cx.start_timer(timer);
-
-        Self {
-            spectrum,
-            sample_rate,
-            frequency_range: filter_frequency_range(),
-        }
-        .build(cx, |_cx| ())
-        .bind(redraw_tick, |mut handle| handle.needs_redraw())
+    if rect.width() == 0.0 || rect.height() == 0.0 {
+        return;
     }
 
-    fn draw_analyzer(&self, cx: &mut DrawContext, canvas: &Canvas, bounds: BoundingBox) {
-        let line_width = cx.scale_factor() * 1.5;
-        let mut paint = vg::Paint::default();
-        paint.set_color(cx.font_color());
-        paint.set_style(vg::PaintStyle::Stroke);
-        paint.set_stroke_width(line_width);
-        paint.set_anti_alias(true);
+    let frequency_range = filter_frequency_range();
+    let mut spectrum = spectrum.lock().unwrap();
+    let amplitude_spectrum: Vec<f32> = spectrum.read().iter().map(|c| c.norm()).collect();
+    let sr = sample_rate.load(Ordering::Relaxed);
 
-        let mut path = vg::PathBuilder::new();
+    let stroke = egui::Stroke::new(1.5, ui.visuals().text_color());
+    let mut points = Vec::new();
 
-        let mut spectrum = self.spectrum.lock().unwrap();
-        let amplitude_spectrum: Vec<f32> = spectrum.read().iter().map(|c| c.norm()).collect();
-
-        let sr = self.sample_rate.load(Ordering::Relaxed);
-
-        for (bin_index, amplitude) in amplitude_spectrum.iter().enumerate() {
-            if bin_index == 0 {
-                path.move_to((bounds.x - 100., bounds.y + bounds.h));
-                continue;
-            }
-
-            let frequency = bin_index as f32 * sr / amplitude_spectrum.len() as f32;
-            let x = self.frequency_range.normalize(frequency);
-
-            // this changes the height of the visualized spectrum
-            let h = (util::gain_to_db(*amplitude) + 100.) / 120.;
-
-            path.line_to((bounds.x + bounds.w * x, bounds.y + bounds.h * (1. - h)));
+    for (bin_index, amplitude) in amplitude_spectrum.iter().enumerate() {
+        if bin_index == 0 {
+            continue;
         }
 
-        let path = path.detach();
-        canvas.draw_path(&path, &paint);
-    }
-}
+        let frequency = bin_index as f32 * sr / amplitude_spectrum.len() as f32;
+        let x = frequency_range.normalize(frequency);
+        let h = (util::gain_to_db(*amplitude) + 100.) / 120.;
 
-impl View for SpectrumAnalyzer {
-    fn element(&self) -> Option<&'static str> {
-        Some("spectrum-analyzer")
+        points.push(Pos2::new(
+            rect.min.x + rect.width() * x,
+            rect.min.y + rect.height() * (1. - h),
+        ));
     }
 
-    fn draw(&self, cx: &mut DrawContext, canvas: &Canvas) {
-        let bounds = cx.bounds();
-        if bounds.w == 0.0 || bounds.h == 0.0 {
-            return;
-        }
-
-        self.draw_analyzer(cx, canvas, bounds);
+    if points.len() >= 2 {
+        ui.painter().add(egui::Shape::line(points, stroke));
     }
+
+    ui.painter().rect_stroke(
+        rect,
+        0.0,
+        egui::Stroke::new(1.0, Color32::from_gray(180)),
+        egui::StrokeKind::Inside,
+    );
 }
