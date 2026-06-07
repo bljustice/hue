@@ -15,8 +15,6 @@ fn filter_frequency_range() -> FloatRange {
     }
 }
 
-// Spectrum UI credits to SolarLiner
-// https://github.com/SolarLiner/valib/blob/master/plugins/abrasive/src/editor/analyzer.rs
 pub fn spectrum_analyzer(
     ui: &mut Ui,
     spectrum: &SpectrumBuffer,
