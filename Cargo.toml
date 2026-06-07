@@ -13,6 +13,7 @@ members = ["xtask"]
 [dependencies]
 atomic_float = "1.1"
 egui = { version = "0.34", default-features = false, features = ["default_fonts"] }
+egui_knob = "0.3.14"
 nice-plug = { git = "https://codeberg.org/RustAudio/nice-plug.git", features = ["assert_process_allocs"] }
 nice-plug-egui = { git = "https://codeberg.org/RustAudio/nice-plug.git", default-features = false, features = ["opengl"] }
 parking_lot = "0.12.1"

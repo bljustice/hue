@@ -1,39 +1,34 @@
 use egui::Ui;
-use nice_plug::prelude::{Enum, EnumParam, Param};
+use egui_knob::{Knob, KnobStyle};
 use nice_plug::context::gui::ParamSetter;
-use nice_plug_egui::widgets::ParamSlider;
+use nice_plug::prelude::Param;
 
-pub fn param_column<P: Param>(ui: &mut Ui, label: &str, param: &P, setter: &ParamSetter) {
-    ui.vertical(|ui| {
+pub fn param_knob<P: Param>(ui: &mut Ui, label: &str, param: &P, setter: &ParamSetter) {
+    let mut normalized = param.modulated_normalized_value();
+    let default_normalized = param.preview_normalized(param.default_plain_value());
+
+    ui.vertical_centered(|ui| {
         ui.label(label);
-        ui.add(ParamSlider::for_param(param, setter).with_width(70.0));
-    });
-}
-
-pub fn enum_column<T: Enum + PartialEq + 'static>(
-    ui: &mut Ui,
-    label: &str,
-    param: &EnumParam<T>,
-    setter: &ParamSetter,
-) {
-    ui.vertical(|ui| {
-        ui.label(label);
-        let current = param.value();
-        let mut selected = T::to_index(current);
-        let prev = selected;
-
-        egui::ComboBox::from_id_salt(label)
-            .selected_text(T::variants()[selected])
-            .show_ui(ui, |ui| {
-                for (idx, name) in T::variants().iter().enumerate() {
-                    ui.selectable_value(&mut selected, idx, *name);
-                }
-            });
-
-        if selected != prev {
+        let response = ui.add(
+            Knob::new(&mut normalized, 0.0, 1.0, KnobStyle::Wiper)
+                .with_size(44.0)
+                .with_stroke_width(2.0)
+                .with_background_arc(true)
+                .with_show_filled_segments(true)
+                .with_double_click_reset(default_normalized),
+        );
+        if response.drag_started() {
             setter.begin_set_parameter(param);
-            setter.set_parameter(param, T::from_index(selected));
+        }
+        if response.changed() {
+            let plain = param.preview_plain(normalized);
+            if plain != param.modulated_plain_value() {
+                setter.set_parameter(param, plain);
+            }
+        }
+        if response.drag_stopped() {
             setter.end_set_parameter(param);
         }
     });
 }
+

@@ -7,7 +7,8 @@ use std::sync::Arc;
 use crate::config;
 use crate::gui::analyzer::{spectrum_analyzer, SpectrumBuffer};
 use crate::gui::debug::debug_panel;
-use crate::gui::knob::{enum_column, param_column};
+use crate::gui::dropdown::enum_column;
+use crate::gui::knob::param_knob;
 use crate::params::{NoiseParams, NoiseType};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -53,21 +54,16 @@ pub(crate) fn create(
                     });
                     ui.add(Separator::default());
                     ui.add_space(8.0);
-                    ui.vertical_centered(|ui| {
-                        ui.horizontal(|ui| {
-                            param_column(ui, "Gain", &params.gain, setter);
-                            param_column(ui, "Mix", &params.mix, setter);
-                            param_column(ui, "HPF", &params.hpf_fc, setter);
-                            param_column(ui, "LPF", &params.lpf_fc, setter);
-                        });
+                    ui.columns(4, |columns| {
+                        param_knob(&mut columns[0], "Gain", &params.gain, setter);
+                        param_knob(&mut columns[1], "Mix", &params.mix, setter);
+                        param_knob(&mut columns[2], "HPF", &params.hpf_fc, setter);
+                        param_knob(&mut columns[3], "LPF", &params.lpf_fc, setter);
                     });
                     ui.add_space(8.0);
-                    ui.vertical_centered(|ui| {
-                        ui.horizontal(|ui| {
-                            enum_column(ui, "Noise Type", &params.noise_type, setter);
-                            ui.add_space(32.0);
-                            enum_column(ui, "Envelope Mode", &params.env_mode, setter);
-                        });
+                    ui.columns(2, |columns| {
+                        enum_column(&mut columns[0], "Noise Type", &params.noise_type, setter);
+                        enum_column(&mut columns[1], "Envelope Mode", &params.env_mode, setter);
                     });
 
                     if !cfg!(debug_assertions) {
