@@ -11,7 +11,7 @@ use crate::gui::knob::{enum_column, param_column};
 use crate::params::{NoiseParams, NoiseType};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const PLUGIN_WIDTH: f32 = 400.0;
+const PLUGIN_WIDTH: f32 = 600.0;
 const PLUGIN_HEIGHT: f32 = 550.0;
 
 pub(crate) fn default_state() -> Arc<EguiState> {
@@ -42,24 +42,32 @@ pub(crate) fn create(
                 .frame(egui::Frame::new().inner_margin(Margin::same(12)).fill(bg))
                 .show_inside(ui, |ui| {
                     ui.vertical_centered(|ui| {
-                        ui.label(
-                            RichText::new("hue")
-                                .size(30.0)
-                                .color(Color32::from_gray(40)),
-                        );
+                        ui.label(RichText::new("hue")
+                            .size(30.0)
+                            .color(Color32::from_gray(40)));
                         ui.label(format!("v{VERSION}"));
                     });
-
                     ui.add_space(8.0);
-                    spectrum_analyzer(ui, &spectrum_buffer, &sample_rate);
+                    ui.vertical_centered(|ui| {
+                        spectrum_analyzer(ui, &spectrum_buffer, &sample_rate);
+                    });
                     ui.add(Separator::default());
                     ui.add_space(8.0);
-
-                    ui.horizontal(|ui| {
-                        param_column(ui, "Gain", &params.gain, setter);
-                        param_column(ui, "Mix", &params.mix, setter);
-                        param_column(ui, "HPF", &params.hpf_fc, setter);
-                        param_column(ui, "LPF", &params.lpf_fc, setter);
+                    ui.vertical_centered(|ui| {
+                        ui.horizontal(|ui| {
+                            param_column(ui, "Gain", &params.gain, setter);
+                            param_column(ui, "Mix", &params.mix, setter);
+                            param_column(ui, "HPF", &params.hpf_fc, setter);
+                            param_column(ui, "LPF", &params.lpf_fc, setter);
+                        });
+                    });
+                    ui.add_space(8.0);
+                    ui.vertical_centered(|ui| {
+                        ui.horizontal(|ui| {
+                            enum_column(ui, "Noise Type", &params.noise_type, setter);
+                            ui.add_space(32.0);
+                            enum_column(ui, "Envelope Mode", &params.env_mode, setter);
+                        });
                     });
 
                     if !cfg!(debug_assertions) {
@@ -67,12 +75,6 @@ pub(crate) fn create(
                     } else {
                         ui.add_space(8.0);
                     }
-
-                    ui.horizontal_centered(|ui| {
-                        enum_column(ui, "Noise Type", &params.noise_type, setter);
-                        ui.add_space(32.0);
-                        enum_column(ui, "Envelope Mode", &params.env_mode, setter);
-                    });
 
                     if cfg!(debug_assertions) {
                         ui.add_space(8.0);

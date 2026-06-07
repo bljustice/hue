@@ -16,7 +16,7 @@ pub fn enum_column<T: Enum + PartialEq + 'static>(
     param: &EnumParam<T>,
     setter: &ParamSetter,
 ) {
-    ui.vertical_centered(|ui| {
+    ui.vertical(|ui| {
         ui.label(label);
         let current = param.value();
         let mut selected = T::to_index(current);
