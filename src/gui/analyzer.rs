@@ -22,8 +22,10 @@ pub fn spectrum_analyzer(
     spectrum: &SpectrumBuffer,
     sample_rate: &Arc<AtomicF32>,
 ) {
-    let height = 60.0_f32.max(ui.available_width() * 0.12);
-    let (rect, _response) = ui.allocate_exact_size(Vec2::new(ui.available_width(), height), egui::Sense::hover());
+    let width = ui.available_rect_before_wrap().width();
+    let height = 60.0_f32.max(width * 0.12);
+    let (rect, _response) =
+        ui.allocate_exact_size(Vec2::new(width, height), egui::Sense::hover());
 
     if rect.width() == 0.0 || rect.height() == 0.0 {
         return;
@@ -33,18 +35,22 @@ pub fn spectrum_analyzer(
     let mut spectrum = spectrum.lock().unwrap();
     let amplitude_spectrum: Vec<f32> = spectrum.read().iter().map(|c| c.norm()).collect();
     let sr = sample_rate.load(Ordering::Relaxed);
+    let fft_size = 2.0 * amplitude_spectrum.len().saturating_sub(1) as f32;
 
     let stroke = egui::Stroke::new(1.5, ui.visuals().text_color());
-    let mut points = Vec::new();
+    let mut points = Vec::with_capacity(amplitude_spectrum.len());
+
+    // Anchor the path at the bottom-left, like the original vizia version.
+    points.push(Pos2::new(rect.min.x, rect.max.y));
 
     for (bin_index, amplitude) in amplitude_spectrum.iter().enumerate() {
         if bin_index == 0 {
             continue;
         }
 
-        let frequency = bin_index as f32 * sr / amplitude_spectrum.len() as f32;
-        let x = frequency_range.normalize(frequency);
-        let h = (util::gain_to_db(*amplitude) + 100.) / 120.;
+        let frequency = bin_index as f32 * sr / fft_size;
+        let x = frequency_range.normalize(frequency).clamp(0.0, 1.0);
+        let h = ((util::gain_to_db(*amplitude) + 100.) / 120.).clamp(0.0, 1.0);
 
         points.push(Pos2::new(
             rect.min.x + rect.width() * x,

@@ -49,9 +49,7 @@ pub(crate) fn create(
                         ui.label(format!("v{VERSION}"));
                     });
                     ui.add_space(8.0);
-                    ui.vertical_centered(|ui| {
-                        spectrum_analyzer(ui, &spectrum_buffer, &sample_rate);
-                    });
+                    spectrum_analyzer(ui, &spectrum_buffer, &sample_rate);
                     ui.add(Separator::default());
                     ui.add_space(8.0);
                     ui.columns(4, |columns| {
