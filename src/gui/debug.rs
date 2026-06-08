@@ -1,30 +1,31 @@
-use nih_plug_vizia::vizia::prelude::*;
+use crate::config;
+use egui::Ui;
+use std::sync::atomic::Ordering::Relaxed;
 
-pub struct DebugContainer {}
-
-impl View for DebugContainer {}
-
-impl DebugContainer {
-    pub fn new<L>(cx: &mut Context, lens: L, class_name: String) -> Handle<Self>
-    where
-        L: Lens<Target = Vec<(String, f32)>>,
-    {
-        Self {}.build(cx, |cx| {
-            VStack::new(cx, move |cx| {
-                Binding::new(cx, lens, move |cx, lens| {
-                    let debug_vals = lens.get(cx);
-                    for val_tuple in debug_vals {
-                        HStack::new(cx, move |cx| {
-                            let (sample_str, sample_val) = val_tuple;
-                            let label_str = format!("{}: {}", &sample_str, &sample_val.to_string());
-                            Label::new(cx, &label_str);
-                        });
-                    }
-                })
-            })
-            .class(&class_name)
-            .background_color(Color::rgb(255, 255, 255))
-            .color(Color::rgb(0x69, 0x69, 0x69));
-        })
-    }
+pub fn debug_panel(ui: &mut Ui, debug: &config::Debug) {
+    ui.group(|ui| {
+        ui.label(format!(
+            "Current sample value: {}",
+            debug.current_sample_val.load(Relaxed)
+        ));
+        ui.label(format!(
+            "Min sample value seen: {}",
+            debug.min_sample_val.load(Relaxed)
+        ));
+        ui.label(format!(
+            "Max sample value seen: {}",
+            debug.max_sample_val.load(Relaxed)
+        ));
+        ui.label(format!(
+            "Current sampling rate: {}",
+            debug.sample_rate.load(Relaxed)
+        ));
+        ui.label(format!(
+            "Output buffer len: {}",
+            debug.output_buffer.load(Relaxed)
+        ));
+        ui.label(format!("Mix level: {}", debug.mix.load(Relaxed)));
+        ui.label(format!("Gain level: {}", debug.gain.load(Relaxed)));
+        ui.label(format!("Envelope: {}", debug.envelope.load(Relaxed)));
+    });
 }

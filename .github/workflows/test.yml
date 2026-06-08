@@ -21,29 +21,29 @@ jobs:
       matrix:
         include:
           - { name: ubuntu-22.04,       os: ubuntu-22.04,   cross-target: '' }
-          - { name: macos-universal,    os: macos-11,       cross-target: aarch64-apple-darwin }
+          - { name: macos-universal,    os: macos-14,       cross-target: '' }
           - { name: windows,            os: windows-latest, cross-target: '' }
     name: Test plugin builds
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Fetch all git history
-        run: git fetch --force --prune --tags --unshallow
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y libasound2-dev libgl-dev libjack-dev libxcb1-dev libxcb-icccm4-dev libxcursor-dev libxkbcommon-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libxcb-dri2-0 libxcb-dri2-0-dev libx11-xcb-dev
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         if: startsWith(matrix.os, 'windows')
         with:
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ matrix.name }}-${{ matrix.cross-target }}
-      - uses: actions/cache@v2
+          key: test-${{ matrix.name }}-${{ matrix.cross-target }}
+      - uses: actions/cache@v4
         if: startsWith(matrix.os, 'windows') != true
         with:
           path: |
@@ -51,15 +51,16 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ matrix.name }}-${{ matrix.cross-target }}
+          key: test-${{ matrix.name }}-${{ matrix.cross-target }}
 
       - name: Set up Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
-          profile: minimal
-          default: true
-          target: ${{ matrix.cross-target }}
+          targets: ${{ matrix.cross-target }}
+
+      - name: Install macOS universal build targets
+        if: matrix.name == 'macos-universal'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
       - name: Package all targets from bundler.toml
         run: |
           # Building can be sped up by specifying all packages in one go

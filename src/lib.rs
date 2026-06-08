@@ -1,5 +1,5 @@
 use filters::coefficients::FilterType;
-use nih_plug::prelude::*;
+use nice_plug::prelude::*;
 use noise::NoiseConfig;
 use params::NoiseType;
 use std::sync::{atomic::Ordering, Arc};
@@ -156,5 +156,5 @@ impl Vst3Plugin for noise::Noise {
         &[Vst3SubCategory::Tools, Vst3SubCategory::Fx];
 }
 
-nih_export_clap!(noise::Noise);
-nih_export_vst3!(noise::Noise);
+nice_export_clap!(noise::Noise);
+nice_export_vst3!(noise::Noise);

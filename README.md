@@ -21,8 +21,14 @@ Hue is an audio plugin that helps mix different noise types into an audio signal
 
 ## Installation
 
-1. Download the latest release for your OS from the following [nightly link page](https://nightly.link/bljustice/hue/workflows/build/main).
-2. Extract the downloaded archive to your VST3 plugin folder.
+1. Download the latest release for your OS from [GitHub Releases](https://github.com/bljustice/hue/releases).
+2. Extract the downloaded archive and copy the plugin bundles into your plugin folder:
+   - **macOS VST3**: `~/Library/Audio/Plug-Ins/VST3`
+   - **macOS CLAP**: `~/Library/Audio/Plug-Ins/CLAP`
+   - **Windows VST3**: `C:\Program Files\Common Files\VST3`
+   - **Linux VST3**: `~/.vst3`
+
+Each archive includes a `README.txt` with OS-specific installation instructions.
 
 ## Building from Source
 

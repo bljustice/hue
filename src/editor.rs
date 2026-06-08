@@ -1,406 +1,90 @@
 use atomic_float::AtomicF32;
-use nih_plug::context::gui::{GuiContext, ParamSetter};
-use nih_plug::prelude::{Editor, Param};
-use nih_plug_vizia::vizia::style::Color;
-use nih_plug_vizia::vizia::{prelude::*, views};
-use nih_plug_vizia::widgets::*;
-use nih_plug_vizia::{assets, create_vizia_editor, ViziaState, ViziaTheming};
-use std::env;
-use std::sync::{atomic::Ordering::Relaxed, Arc};
+use egui::{Color32, Margin, RichText, Separator};
+use nice_plug::prelude::Editor;
+use nice_plug_egui::{create_egui_editor, EguiSettings, EguiState};
+use std::sync::Arc;
 
-use crate::gui::analyzer::{SpectrumAnalyzer, SpectrumBuffer};
-use crate::gui::debug::DebugContainer;
-use crate::gui::knob::KnobContainer;
+use crate::config;
+use crate::gui::analyzer::{spectrum_analyzer, SpectrumBuffer};
+use crate::gui::debug::debug_panel;
+use crate::gui::dropdown::enum_column;
+use crate::gui::knob::param_knob;
 use crate::params::{NoiseParams, NoiseType};
-use crate::{config, envelope};
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-const PLUGIN_WIDTH: f32 = 400.0;
+const PLUGIN_WIDTH: f32 = 600.0;
 const PLUGIN_HEIGHT: f32 = 550.0;
-const POINT_SCALE: f32 = 0.75;
-const ICON_DOWN_OPEN: &str = "\u{25BC}";
 
-#[derive(Lens)]
-struct UiData {
-    pub gui_context: Arc<dyn GuiContext>,
-    params: Arc<NoiseParams>,
-    noise_types: Vec<String>,
-    white_noise_types: Vec<String>,
-    envelope_mode_types: Vec<String>,
-    debug: config::Debug,
-    sample_rate: Arc<AtomicF32>,
-    spectrum_buffer: SpectrumBuffer,
-}
-
-#[derive(Debug)]
-pub enum ParamChangeEvent {
-    NoiseEvent(String),
-    MixSet(f32),
-    GainSet(f32),
-    LpfSet(f32),
-    HpfSet(f32),
-    EnvelopeModeEvent(String),
-}
-
-impl Model for UiData {
-    fn event(&mut self, _cx: &mut EventContext, event: &mut Event) {
-        let setter = ParamSetter::new(self.gui_context.as_ref());
-        event.map(|e, _| match e {
-            ParamChangeEvent::NoiseEvent(s) => {
-                if s == "white" {
-                    setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, NoiseType::White);
-                    setter.end_set_parameter(&self.params.noise_type);
-                } else if s == "pink" {
-                    setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, NoiseType::Pink);
-                    setter.end_set_parameter(&self.params.noise_type);
-                } else if s == "brown" {
-                    setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, NoiseType::Brown);
-                    setter.end_set_parameter(&self.params.noise_type);
-                } else if s == "violet" {
-                    setter.begin_set_parameter(&self.params.noise_type);
-                    setter.set_parameter(&self.params.noise_type, NoiseType::Violet);
-                    setter.end_set_parameter(&self.params.noise_type);
-                }
-            }
-            ParamChangeEvent::MixSet(f) => {
-                setter.begin_set_parameter(&self.params.mix);
-                setter.set_parameter(&self.params.mix, *f);
-                setter.end_set_parameter(&self.params.mix);
-            }
-            ParamChangeEvent::GainSet(f) => {
-                setter.begin_set_parameter(&self.params.gain);
-                setter.set_parameter_normalized(&self.params.gain, *f);
-                setter.end_set_parameter(&self.params.gain);
-            }
-            ParamChangeEvent::LpfSet(f) => {
-                setter.begin_set_parameter(&self.params.lpf_fc);
-                setter.set_parameter_normalized(&self.params.lpf_fc, *f);
-                setter.end_set_parameter(&self.params.lpf_fc);
-            }
-            ParamChangeEvent::HpfSet(f) => {
-                setter.begin_set_parameter(&self.params.hpf_fc);
-                setter.set_parameter_normalized(&self.params.hpf_fc, *f);
-                setter.end_set_parameter(&self.params.hpf_fc);
-            }
-            ParamChangeEvent::EnvelopeModeEvent(s) => {
-                if s == "follow" {
-                    setter.begin_set_parameter(&self.params.env_mode);
-                    setter.set_parameter(
-                        &self.params.env_mode,
-                        envelope::follower::EnvelopeMode::Follow,
-                    );
-                    setter.end_set_parameter(&self.params.env_mode);
-                } else if s == "continuous" {
-                    setter.begin_set_parameter(&self.params.env_mode);
-                    setter.set_parameter(
-                        &self.params.env_mode,
-                        envelope::follower::EnvelopeMode::Continuous,
-                    );
-                    setter.end_set_parameter(&self.params.env_mode);
-                }
-            }
-        });
-    }
-}
-
-pub(crate) fn default_state() -> Arc<ViziaState> {
-    ViziaState::new(|| (PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32))
+pub(crate) fn default_state() -> Arc<EguiState> {
+    EguiState::from_size(PLUGIN_WIDTH as u32, PLUGIN_HEIGHT as u32)
 }
 
 pub(crate) fn create(
     params: Arc<NoiseParams>,
-    editor_state: Arc<ViziaState>,
+    editor_state: Arc<EguiState>,
     debug: config::Debug,
     sample_rate: Arc<AtomicF32>,
     spectrum_buffer: SpectrumBuffer,
 ) -> Option<Box<dyn Editor>> {
-    create_vizia_editor(editor_state, ViziaTheming::Custom, move |cx, context| {
-        assets::register_noto_sans_light(cx);
-        cx.add_theme(include_str!("gui/style.css"));
-
-        UiData {
-            gui_context: context.clone(),
-            params: params.clone(),
-            debug: debug.clone(),
-            noise_types: vec![
-                "white".to_string(),
-                "pink".to_string(),
-                "brown".to_string(),
-                "violet".to_string(),
-            ],
-            white_noise_types: vec!["normal".to_string(), "uniform".to_string()],
-            envelope_mode_types: vec!["follow".to_string(), "continuous".to_string()],
-            sample_rate: sample_rate.clone(),
-            spectrum_buffer: spectrum_buffer.clone(),
-        }
-        .build(cx);
-        ResizeHandle::new(cx);
-        Binding::new(
-            cx,
-            UiData::params.map(|p| p.noise_type.to_string().to_lowercase()),
-            move |cx, lens| {
-                let noise_color = lens.get(cx);
-                build_gui(cx).background_color(change_plugin_color(&noise_color));
-            },
-        );
-    })
-}
-
-fn change_plugin_color(noise_color: &str) -> Color {
-    let plugin_color = match noise_color {
-        "white" => Color::from("#F9F6EE"),
-        "pink" => Color::from("#FFC0CB"),
-        "brown" => Color::from("#C19A6B"),
-        "violet" => Color::from("#CF9FFF"),
-        _ => Color::from("#F9F6EE"),
-    };
-
-    return plugin_color;
-}
-
-fn create_title_block(cx: &mut Context) -> Handle<VStack> {
-    let version_str = format!("v{}", VERSION);
-    VStack::new(cx, |cx| {
-        Label::new(cx, "hue")
-            .font_family(vec![FamilyOwned::Name(String::from(
-                assets::NOTO_SANS_LIGHT,
-            ))])
-            .font_size(40.0 * POINT_SCALE);
-        Label::new(cx, &version_str).font_size(15.0 * POINT_SCALE);
-    })
-    .class("title-container")
-    .child_space(Stretch(1.0))
-}
-
-fn create_gain_block(cx: &mut Context) -> Handle<KnobContainer> {
-    KnobContainer::new(
-        cx,
-        "Gain".to_string(),
-        UiData::params.map(|p| p.gain.unmodulated_normalized_value()),
-        UiData::params.map(|p| p.gain.to_string()),
-        move |cx, val| {
-            cx.emit(ParamChangeEvent::GainSet(val));
+    create_egui_editor(
+        editor_state.clone(),
+        (),
+        EguiSettings::default(),
+        |ctx, _queue, _state| {
+            ctx.global_style_mut(|style| {
+                style.visuals.window_fill = Color32::from_rgb(0xF9, 0xF6, 0xEE);
+                style.visuals.panel_fill = Color32::from_rgb(0xF9, 0xF6, 0xEE);
+                style.visuals.override_text_color = Some(Color32::BLACK);
+            });
         },
-    )
-}
+        move |ui, setter, _queue, _state| {
+            let bg = noise_type_color(params.noise_type.value());
 
-fn create_mix_block(cx: &mut Context) -> Handle<KnobContainer> {
-    KnobContainer::new(
-        cx,
-        "Mix".to_string(),
-        UiData::params.map(|p| p.mix.value()),
-        UiData::params.map(|p| p.mix.to_string()),
-        move |cx, val| {
-            cx.emit(ParamChangeEvent::MixSet(val));
-        },
-    )
-}
-
-fn create_lpf_block(cx: &mut Context) -> Handle<KnobContainer> {
-    KnobContainer::new(
-        cx,
-        "LPF".to_string(),
-        UiData::params.map(|p| p.lpf_fc.unmodulated_normalized_value()),
-        UiData::params.map(|p| p.lpf_fc.to_string()),
-        move |cx, val| {
-            cx.emit(ParamChangeEvent::LpfSet(val));
-        },
-    )
-}
-
-fn create_hpf_block(cx: &mut Context) -> Handle<KnobContainer> {
-    KnobContainer::new(
-        cx,
-        "HPF".to_string(),
-        UiData::params.map(|p| p.hpf_fc.unmodulated_normalized_value()),
-        UiData::params.map(|p| p.hpf_fc.to_string()),
-        |cx, val| {
-            cx.emit(ParamChangeEvent::HpfSet(val));
-        },
-    )
-}
-
-fn create_spectrum_analyzer(cx: &mut Context) -> Handle<HStack> {
-    HStack::new(cx, |cx| {
-        ZStack::new(cx, |cx| {
-            SpectrumAnalyzer::new(
-                cx,
-                UiData::spectrum_buffer.get(cx),
-                UiData::sample_rate.get(cx),
-            );
-        });
-    })
-    .class("spectrum-analyzer-container")
-}
-
-fn create_noise_selector(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "Noise Type")
-            .font_size(15.0 * POINT_SCALE)
-            .class("dropdown-label");
-        Dropdown::new(
-            cx,
-            move |cx| {
-                VStack::new(cx, move |cx| {
-                    Label::new(cx, UiData::params.map(|p| p.noise_type.to_string()));
-                    Label::new(cx, ICON_DOWN_OPEN).class("arrow");
-                })
-                .class("title")
-                .child_space(Stretch(1.0))
-            },
-            move |cx| {
-                List::new(cx, UiData::noise_types, move |cx, _idx, item| {
-                    VStack::new(cx, move |cx| {
-                        Binding::new(
-                            cx,
-                            UiData::params.map(|p| p.noise_type.to_string()),
-                            move |cx, choice| {
-                                let selected = *item.get(cx) == *choice.get(cx);
-                                Label::new(cx, &item.get(cx))
-                                    .background_color(if selected {
-                                        Color::from("#c28919")
-                                    } else {
-                                        Color::transparent()
-                                    })
-                                    .on_press(move |cx| {
-                                        cx.emit(ParamChangeEvent::NoiseEvent(item.get(cx)));
-                                        cx.emit(views::PopupEvent::Close);
-                                    })
-                                    .child_space(Stretch(1.0))
-                                    .class("dropdown-label-value");
-                            },
-                        );
+            egui::CentralPanel::default()
+                .frame(egui::Frame::new().inner_margin(Margin::same(12)).fill(bg))
+                .show_inside(ui, |ui| {
+                    ui.vertical_centered(|ui| {
+                        ui.label(RichText::new("hue")
+                            .size(30.0)
+                            .color(Color32::from_gray(40)));
+                        ui.label(format!("v{VERSION}"));
                     });
-                });
-            },
-        )
-        .width(Percentage(90.0))
-        .class("noise-dropdown");
-    })
-    .child_space(Stretch(1.0))
-    .class("noise-dropdown-container")
-}
-
-fn create_envelope_mode_block(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        Label::new(cx, "Envelope Mode")
-            .font_size(15.0 * POINT_SCALE)
-            .class("dropdown-label");
-        Dropdown::new(
-            cx,
-            move |cx| {
-                VStack::new(cx, move |cx| {
-                    Label::new(cx, UiData::params.map(|p| p.env_mode.to_string()));
-                    Label::new(cx, ICON_DOWN_OPEN).class("arrow");
-                })
-                .class("title")
-                .child_space(Stretch(1.0))
-            },
-            move |cx| {
-                List::new(cx, UiData::envelope_mode_types, move |cx, _idx, item| {
-                    VStack::new(cx, move |cx| {
-                        Binding::new(
-                            cx,
-                            UiData::params.map(|p| p.env_mode.to_string()),
-                            move |cx, choice| {
-                                let selected = *item.get(cx) == *choice.get(cx);
-                                Label::new(cx, &item.get(cx))
-                                    .background_color(if selected {
-                                        Color::from("#c28919")
-                                    } else {
-                                        Color::transparent()
-                                    })
-                                    .on_press(move |cx| {
-                                        cx.emit(ParamChangeEvent::EnvelopeModeEvent(item.get(cx)));
-                                        cx.emit(views::PopupEvent::Close);
-                                    })
-                                    .child_space(Stretch(1.0))
-                                    .class("dropdown-label-value");
-                            },
-                        );
+                    ui.add_space(8.0);
+                    spectrum_analyzer(ui, &spectrum_buffer, &sample_rate);
+                    ui.add(Separator::default());
+                    ui.add_space(8.0);
+                    ui.columns(4, |columns| {
+                        param_knob(&mut columns[0], "Gain", &params.gain, setter);
+                        param_knob(&mut columns[1], "Mix", &params.mix, setter);
+                        param_knob(&mut columns[2], "HPF", &params.hpf_fc, setter);
+                        param_knob(&mut columns[3], "LPF", &params.lpf_fc, setter);
                     });
+                    ui.add_space(8.0);
+                    ui.columns(2, |columns| {
+                        enum_column(&mut columns[0], "Noise Type", &params.noise_type, setter);
+                        enum_column(&mut columns[1], "Envelope Mode", &params.env_mode, setter);
+                    });
+
+                    if !cfg!(debug_assertions) {
+                        ui.add_space(ui.available_height() * 0.25);
+                    } else {
+                        ui.add_space(8.0);
+                    }
+
+                    if cfg!(debug_assertions) {
+                        ui.add_space(8.0);
+                        debug_panel(ui, &debug);
+                    }
                 });
-            },
-        )
-        .width(Percentage(90.0))
-        .class("noise-dropdown");
-    })
-    .child_space(Stretch(1.0))
-    .class("noise-dropdown-container")
+        },
+    )
 }
 
-fn create_noise_selector_row(cx: &mut Context) -> Handle<HStack> {
-    if cfg!(debug_assertions) {
-        return HStack::new(cx, move |cx| {
-            create_noise_selector(cx);
-            create_envelope_mode_block(cx);
-        })
-        .class("all-dropdowns-container")
-        .child_space(Stretch(1.0));
-    } else {
-        return HStack::new(cx, move |cx| {
-            create_noise_selector(cx);
-            create_envelope_mode_block(cx);
-        })
-        .class("all-dropdowns-container")
-        .child_space(Stretch(1.0))
-        .bottom(Percentage(25.0));
+fn noise_type_color(noise_type: NoiseType) -> Color32 {
+    match noise_type {
+        NoiseType::White => Color32::from_rgb(0xF9, 0xF6, 0xEE),
+        NoiseType::Pink => Color32::from_rgb(0xFF, 0xC0, 0xCB),
+        NoiseType::Brown => Color32::from_rgb(0xC1, 0x9A, 0x6B),
+        NoiseType::Violet => Color32::from_rgb(0xCF, 0x9F, 0xFF),
     }
-}
-
-fn build_gui(cx: &mut Context) -> Handle<VStack> {
-    VStack::new(cx, |cx| {
-        create_title_block(cx);
-        create_spectrum_analyzer(cx);
-        HStack::new(cx, move |cx| {
-            create_gain_block(cx);
-            create_mix_block(cx);
-            create_hpf_block(cx);
-            create_lpf_block(cx);
-        })
-        .class("knob-container");
-        create_noise_selector_row(cx);
-        if cfg!(debug_assertions) {
-            HStack::new(cx, move |cx| {
-                DebugContainer::new(
-                    cx,
-                    UiData::debug.map(|p| {
-                        return vec![
-                            (
-                                "Curent sample value".to_string(),
-                                p.current_sample_val.load(Relaxed),
-                            ),
-                            (
-                                "Min sample value seen".to_string(),
-                                p.min_sample_val.load(Relaxed),
-                            ),
-                            (
-                                "Max sample value seen".to_string(),
-                                p.max_sample_val.load(Relaxed),
-                            ),
-                            (
-                                "Current sampling rate".to_string(),
-                                p.sample_rate.load(Relaxed),
-                            ),
-                            (
-                                "Output buffer len".to_string(),
-                                p.output_buffer.load(Relaxed),
-                            ),
-                            ("Mix level".to_string(), p.mix.load(Relaxed)),
-                            ("Gain level".to_string(), p.gain.load(Relaxed)),
-                            ("Envelope".to_string(), p.envelope.load(Relaxed)),
-                        ];
-                    }),
-                    "debug-container".to_string(),
-                );
-            })
-            .class("debug-row");
-        }
-    })
-    .row_between(Pixels(0.0))
-    .child_left(Stretch(1.0))
-    .child_right(Stretch(1.0))
 }

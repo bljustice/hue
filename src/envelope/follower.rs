@@ -1,4 +1,4 @@
-use nih_plug::prelude::Enum;
+use nice_plug::prelude::Enum;
 use std::time::Duration;
 
 #[derive(Enum, PartialEq, Debug)]

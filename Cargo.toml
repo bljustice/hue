@@ -1,6 +1,6 @@
 [package]
 name = "hue"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
@@ -11,12 +11,16 @@ crate-type = ["cdylib"]
 members = ["xtask"]
 
 [dependencies]
-atomic_float = "0.1"
-nih_plug = { git = "https://github.com/robbert-vdh/nih-plug.git", features = ["assert_process_allocs"] }
-nih_plug_vizia = { git = "https://github.com/robbert-vdh/nih-plug.git" }
+atomic_float = "1.1"
+egui = { version = "0.34", default-features = false, features = ["default_fonts"] }
+egui_knob = "0.3.14"
+nice-plug = { git = "https://codeberg.org/RustAudio/nice-plug.git", features = ["assert_process_allocs"] }
+nice-plug-egui = { git = "https://codeberg.org/RustAudio/nice-plug.git", default-features = false, features = ["opengl"] }
 parking_lot = "0.12.1"
 rand = "0.8.5"
 rand_distr = "0.4.3"
 realfft = "3.3.0"
-triple_buffer = "6.2.0"
-vizia = "0.1.0"
+triple_buffer = "9.0.0"
+
+[patch."https://codeberg.org/BillyDM/nice-plug"]
+nice-plug = { git = "https://codeberg.org/RustAudio/nice-plug.git" }
