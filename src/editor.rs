@@ -34,6 +34,7 @@ pub(crate) fn create(
             ctx.global_style_mut(|style| {
                 style.visuals.window_fill = Color32::from_rgb(0xF9, 0xF6, 0xEE);
                 style.visuals.panel_fill = Color32::from_rgb(0xF9, 0xF6, 0xEE);
+                style.visuals.override_text_color = Some(Color32::BLACK);
             });
         },
         move |ui, setter, _queue, _state| {

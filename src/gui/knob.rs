@@ -1,7 +1,9 @@
-use egui::Ui;
+use egui::{Color32, Ui};
 use egui_knob::{Knob, KnobStyle};
 use nice_plug::context::gui::ParamSetter;
 use nice_plug::prelude::Param;
+
+const KNOB_COLOR: Color32 = Color32::BLACK;
 
 pub fn param_knob<P: Param>(ui: &mut Ui, label: &str, param: &P, setter: &ParamSetter) {
     let mut normalized = param.modulated_normalized_value();
@@ -15,7 +17,8 @@ pub fn param_knob<P: Param>(ui: &mut Ui, label: &str, param: &P, setter: &ParamS
                 .with_stroke_width(2.0)
                 .with_background_arc(true)
                 .with_show_filled_segments(true)
-                .with_double_click_reset(default_normalized),
+                .with_double_click_reset(default_normalized)
+                .with_colors(KNOB_COLOR, KNOB_COLOR, KNOB_COLOR),
         );
         if response.drag_started() {
             setter.begin_set_parameter(param);
@@ -29,6 +32,8 @@ pub fn param_knob<P: Param>(ui: &mut Ui, label: &str, param: &P, setter: &ParamS
         if response.drag_stopped() {
             setter.end_set_parameter(param);
         }
+
+        ui.label(param.normalized_value_to_string(normalized, true));
     });
 }
 
