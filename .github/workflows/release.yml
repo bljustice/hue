@@ -82,7 +82,8 @@ jobs:
 
       - name: Prepare release archive
         run: |
-          echo "ARCHIVE_NAME=hue-${GITHUB_REF_NAME}-${{ matrix.name }}" >> "$GITHUB_ENV"
+          ARCHIVE_NAME="hue-${GITHUB_REF_NAME}-${{ matrix.name }}"
+          echo "ARCHIVE_NAME=$ARCHIVE_NAME" >> "$GITHUB_ENV"
           mkdir -p "$ARCHIVE_NAME/$ARCHIVE_NAME"
           mv target/bundled/* "$ARCHIVE_NAME/$ARCHIVE_NAME"
           cp ".github/workflows/readme-${{ runner.os }}.txt" "$ARCHIVE_NAME/$ARCHIVE_NAME/README.txt"
