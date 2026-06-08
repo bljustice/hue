@@ -21,7 +21,7 @@ jobs:
       matrix:
         include:
           - { name: ubuntu-22.04,       os: ubuntu-22.04,   cross-target: '' }
-          - { name: macos-universal,    os: macos-11,       cross-target: aarch64-apple-darwin }
+          - { name: macos-universal,    os: macos-14,       cross-target: '' }
           - { name: windows,            os: windows-latest, cross-target: '' }
     name: Test plugin builds
     runs-on: ${{ matrix.os }}
@@ -57,6 +57,10 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.cross-target }}
+
+      - name: Install macOS universal build targets
+        if: matrix.name == 'macos-universal'
+        run: rustup target add x86_64-apple-darwin aarch64-apple-darwin
       - name: Package all targets from bundler.toml
         run: |
           # Building can be sped up by specifying all packages in one go
