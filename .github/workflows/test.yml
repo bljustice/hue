@@ -26,24 +26,24 @@ jobs:
     name: Test plugin builds
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
-      - name: Fetch all git history
-        run: git fetch --force --prune --tags --unshallow
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install dependencies
         if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y libasound2-dev libgl-dev libjack-dev libxcb1-dev libxcb-icccm4-dev libxcursor-dev libxkbcommon-dev libxcb-shape0-dev libxcb-xfixes0-dev libx11-dev libxcb-dri2-0 libxcb-dri2-0-dev libx11-xcb-dev
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         if: startsWith(matrix.os, 'windows')
         with:
           path: |
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ matrix.name }}-${{ matrix.cross-target }}
-      - uses: actions/cache@v2
+          key: test-${{ matrix.name }}-${{ matrix.cross-target }}
+      - uses: actions/cache@v4
         if: startsWith(matrix.os, 'windows') != true
         with:
           path: |
@@ -51,7 +51,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: ${{ matrix.name }}-${{ matrix.cross-target }}
+          key: test-${{ matrix.name }}-${{ matrix.cross-target }}
 
       - name: Set up Rust toolchain
         uses: dtolnay/rust-toolchain@stable
